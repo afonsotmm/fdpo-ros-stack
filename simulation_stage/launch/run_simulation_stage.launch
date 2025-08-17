@@ -1,7 +1,10 @@
 <launch>
   <arg name="world_file" default="$(find simulation_stage)/worlds/factory_floor.world"/>
+  <arg name="map_file"  default="$(find simulation_stage)/worlds/factory_map.yaml"/>
 
   <node pkg="stage_ros" type="stageros" name="stage"
-        args="$(arg world_file)">
-  </node>
+        args="$(arg world_file)"/>
+
+  <node pkg="map_server" type="map_server" name="map_server"
+        args="$(arg map_file)"/>
 </launch>
