@@ -1,95 +1,156 @@
 # ===============================
-# Stage config for Robot@Factory (com beacons identificados)
+# Stage config for Robot@Factoryz
 # ===============================
 
-window
-(
-  size [1000 700]
-  scale 300
+name "simulator_stage_edgars"
+
+# simulation timestep in milliseconds
+interval_sim 100
+
+# stop the simulation after this many simulated seconds have elapsed
+quit_time 0
+
+# set the resolution of the underlying raytrace model in meters
+resolution 0.01
+
+#if non-zero, print the simulation time on stdout every $show_clock_interval updates
+#show_clock 0
+
+#sets the number of updates between printing the time on stdoutm, if $show_clock is enabled
+show_clock_interval 100
+
+#the number of worker threads to spawn. Some models can be updated in parallel (e.g. laser, ranger), and running 2 or more threads here may make the simulation run faster
+threads 4
+
+window(
+  size [900 650]
+  center [0.0 0.0]
+  scale 120
+  show_grid 1
+  show_data 1
 )
 
-# ===============================
-# Área da pista: 1.7m x 1.2m
-# ===============================
-floorplan
+#Map definition
+model
 (
-  size [1.7 1.2]
   name "factory_floor"
+  #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
+  pose [0.0 0.0 0.0 0.0]
+  #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
+  size [1.70 1.20 0.00]
+  #specify the position of the object's center, relative to its pose, origin [ x:<float> y:<float> z:<float> heading:<float> ]
+  origin [ 0.000 0.000 0.000 0.000 ]
+  #specify the color of the object using a color name from the X11 database (rgb.txt)
+  color "gray30"
+  #Iff true, 4 thin blocks are automatically added to the model, forming a solid boundary around the bounding box of the model
+  boundary 0
+  #Draw the model by interpreting the lines in a bitmap (bmp, jpeg, gif, png supported). The file is opened and parsed into a set of lines.
+  #The lines are scaled to fit inside the rectangle defined by the model's current size
+  bitmap "factory_map.png"
+
+  # GUI properties
+  #if 1, draw a bounding box around the model, indicating its size
+  gui_outline 1
+  #if 1, the model can be moved by the mouse in the GUI window
+  gui_move 0
+
+  # determine how the model appears in various sensors
+  ranger_return 0.000
 )
 
-# Paredes exteriores
-block (size [1.7 0.05] pose [0.85 0.025 0 0] color "black")  # sul
-block (size [1.7 0.05] pose [0.85 1.175 0 0] color "black")  # norte
-block (size [0.05 1.2] pose [0.025 0.6 0 0] color "black")   # oeste
-block (size [0.05 1.2] pose [1.675 0.6 0 0] color "black")   # leste
-
-# ===============================
-# Warehouses
-# ===============================
-block (size [0.3 0.3] pose [0.2 0.2 0 0] color "green")   # Incoming
-block (size [0.3 0.3] pose [1.5 1.0 0 0] color "blue")    # Outgoing
-
-# ===============================
-# Máquinas
-# ===============================
-block (size [0.25 0.25] pose [0.5 0.9 0 0] color "gray")  # Machine A1
-block (size [0.25 0.25] pose [0.9 0.9 0 0] color "gray")  # Machine B1
-block (size [0.25 0.25] pose [0.5 0.3 0 0] color "gray")  # Machine A2
-block (size [0.25 0.25] pose [0.9 0.3 0 0] color "gray")  # Machine B2
-
-# ===============================
-# Beacons (cilindros retrorefletivos, diâmetro 0.09m)
-# ===============================
-
-cylinder
-(
-  name "beacon_0"
-  pose [-0.1 -0.1 0 0]
-  size [0.045 0.3]
-  color "yellow"
-)
-
-cylinder
-(
-  name "beacon_1"
-  pose [1.8 -0.1 0 0]
-  size [0.045 0.3]
-  color "yellow"
-)
-
-cylinder
-(
-  name "beacon_2"
-  pose [-0.1 1.3 0 0]
-  size [0.045 0.3]
-  color "yellow"
-)
-
-cylinder
-(
-  name "beacon_3"
-  pose [1.8 1.3 0 0]
-  size [0.045 0.3]
-  color "yellow"
-)
-
-# ===============================
-# Robô
-# ===============================
-robot
-(
-  name "robot_0"
-  pose [0.3 0.6 0 0]   # posição inicial
-  size [0.3 0.3]
+#obstacle definition
+define block model(
+  name "block"
+  #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
+  pose [0 0.5 0 0]
+  #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
+  size [2.000 2.000 2.500]
+  #if 1, draw a nose on the model showing its heading (positive X axis)
+  gui_nose 0
   color "red"
-  drive "diff"
 
-  # Laser a 0.4 m de altura (acima das caixas/máquinas)
-  laser
-  (
-    pose [0 0 0.4 0]   # altura Z = 0.4m
-    range_max 5.0
-    fov 180.0
-    samples 180
+  # determine how the model appears in various sensors
+  ranger_return 0.000
+)
+
+define block_small model(
+  name "block"
+  #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
+  pose [0 0.5 0 0]
+  #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
+  size [1.000 3.000 2.500]
+  #if 1, draw a nose on the model showing its heading (positive X axis)
+  gui_nose 0
+  color "red"
+
+  # determine how the model appears in various sensors
+  ranger_return 0.000
+)
+
+#obstacle definition
+define square_beacon model(
+  name "block"
+  #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
+  pose [0 0 0 0]
+  #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
+  size [0.064 0.064 0.4]
+  #if 1, draw a nose on the model showing its heading (positive X axis)
+  gui_nose 0
+  color "yellow"
+
+  # determine how the model appears in various sensors
+  ranger_return 10
+)
+
+# HLS-LFCD2 LiDAR model
+define lidar_hls_lfcd2 ranger(
+  sensor(
+    range [0.12 12.0]
+    fov 360
+    samples 360
   )
+  size [0.06 0.06 0.04]
+  color "red"
+)
+
+
+define robot_0_model position(
+  #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
+  size [0.15 0.10 0.2]
+
+  # position properties
+  #select differential-steer model(like a Pioneer), omnidirectional mode or carlike (velocity and steering angle), drive "diff", "omni" or "car"
+  drive "diff"
+  #if "gps" the position model reports its position with perfect accuracy.
+  #If "odom", a simple odometry model is used and position data drifts from the ground truth over time.
+  #The odometry model is parameterized by the odom_error property
+  #specify the position of the object's center, relative to its pose, origin [ x:<float> y:<float> z:<float> heading:<float> ]
+  origin [0.0 0.000 0.000 0.000]
+
+  # odometry error model parameters,
+  # only used if localization is set to "odom"
+  #parameters for the odometry error model used when specifying localization "odom".
+  #Each value is the maximum proportion of error in intergrating x, y, and theta velocities to compute odometric position estimate.
+  #For each axis, if the the value specified here is E, the actual proportion is chosen at startup at random in the range -E/2 to +E/2.
+  #Note that due to rounding errors, setting these values to zero does NOT give you perfect localization - for that you need to choose localization "gps".
+  odom_error [0.001 0.0003 00.00 0.2]
+
+  # GUI properties
+  #if 1, draw a nose on the model showing its heading (positive X axis)
+  gui_nose 0
+
+  lidar_hls_lfcd2(pose [0.0 0.0 0.0 0.0])
+
+  ranger_return 0.000
+)
+
+square_beacon( pose [ -0.88  0.63 0 0 ] )
+square_beacon( pose [ 0.88  0.63 0 0 ] )
+square_beacon( pose [ -0.88  -0.63 0 0 ] )
+square_beacon( pose [ 0.88  -0.63 0 0 ] )
+
+robot_0_model(
+  pose [ 0.000 0.0 0.000 90.000 ]
+  name "robot_0"
+  color "blue"
 )
