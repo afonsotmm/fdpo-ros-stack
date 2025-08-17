@@ -1,0 +1,7 @@
+<launch>
+  <arg name="world_file" default="$(find simulation_stage)/worlds/factory_floor.world"/>
+
+  <node pkg="stage_ros" type="stageros" name="stage"
+        args="$(arg world_file)">
+  </node>
+</launch>
