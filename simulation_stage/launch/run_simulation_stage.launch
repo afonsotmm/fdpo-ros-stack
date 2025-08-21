@@ -1,6 +1,7 @@
 <launch>
       <arg name="world_file" default="$(find simulation_stage)/worlds/factory_floor.world"/>
       <arg name="map_file"  default="$(find simulation_stage)/worlds/factory_map.yaml"/>
+      <arg name="rviz_config" default="$(find simulation_stage)/hmi/rviz/fdpo_simulation.rviz"/>
 
       <param name="/use_sim_time" value="true"/>
 
@@ -10,7 +11,9 @@
       <node pkg="map_server" type="map_server" name="map_server"
             args="$(arg map_file)"/>
 
+      <node pkg="rviz" type="rviz" name="rviz" output="screen" required="false"
+            args="-d $(arg rviz_config)"/>
+
 	<!-- Hack temporário: map = odom -->
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_identity" args="0 0 0  0 0 0  map odom 100"/>
 </launch>
-
