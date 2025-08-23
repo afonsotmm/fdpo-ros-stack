@@ -41,6 +41,7 @@ class Cluster {
         std::vector<Point*> points;
         double centroid_x, centroid_y;
 
+        Cluster();
         void computeCentroid();
         
 };
