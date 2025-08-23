@@ -24,8 +24,8 @@ threads 4
 
 window(
   size [900 650]
-  center [0.0 0.0]
-  scale 120
+  center [-7.033 0.858]
+  scale 14.742
   show_grid 1
   show_data 1
 )
@@ -35,9 +35,9 @@ model
 (
   name "factory_floor"
   #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
-  pose [0.0 0.0 0.0 0.0]
+  pose [0.000 0.000 0.000 0.000]
   #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
-  size [1.70 1.20 0.00]
+  size [1.700 1.200 0.000]
   #specify the position of the object's center, relative to its pose, origin [ x:<float> y:<float> z:<float> heading:<float> ]
   origin [ 0.000 0.000 0.000 0.000 ]
   #specify the color of the object using a color name from the X11 database (rgb.txt)
@@ -55,7 +55,7 @@ model
   gui_move 0
 
   # determine how the model appears in various sensors
-  ranger_return 0.000
+  ranger_return 0
 )
 
 #obstacle definition
@@ -70,7 +70,7 @@ define block model(
   color "red"
 
   # determine how the model appears in various sensors
-  ranger_return 0.000
+  ranger_return 0
 )
 
 define block_small model(
@@ -93,13 +93,13 @@ define square_beacon model(
   #specify the pose of the model in its parent's coordinate system, pose [ x:<float> y:<float> z:<float> heading:<float> ]
   pose [0 0 0 0]
   #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
-  size [0.064 0.064 0.4]
+  size [0.064 0.064 0.400]
   #if 1, draw a nose on the model showing its heading (positive X axis)
   gui_nose 0
   color "yellow"
 
   # determine how the model appears in various sensors
-  ranger_return 10
+  ranger_return 10.000
 )
 
 # HLS-LFCD2 LiDAR model
@@ -109,14 +109,14 @@ define lidar_hls_lfcd2 ranger(
     fov 360
     samples 360
   )
-  size [0.06 0.06 0.04]
+  size [0.060 0.060 0.040]
   color "red"
 )
 
 
 define robot_0_model position(
   #specify the size of the model in each dimension, specify the size of the model in each dimension, size [ x:<float> y:<float> z:<float> ]
-  size [0.15 0.10 0.2]
+  size [0.150 0.100 0.200]
 
   # position properties
   #select differential-steer model(like a Pioneer), omnidirectional mode or carlike (velocity and steering angle), drive "diff", "omni" or "car"
@@ -125,7 +125,7 @@ define robot_0_model position(
   #If "odom", a simple odometry model is used and position data drifts from the ground truth over time.
   #The odometry model is parameterized by the odom_error property
   #specify the position of the object's center, relative to its pose, origin [ x:<float> y:<float> z:<float> heading:<float> ]
-  origin [0.0 0.000 0.000 0.000]
+  origin [0.000 0.000 0.000 0.000]
 
   # odometry error model parameters,
   # only used if localization is set to "odom"
@@ -139,18 +139,27 @@ define robot_0_model position(
   #if 1, draw a nose on the model showing its heading (positive X axis)
   gui_nose 0
 
-  lidar_hls_lfcd2(pose [0.0 0.0 0.0 0.0])
+  lidar_hls_lfcd2(pose [0.000 0.000 0.000 0.000])
 
-  ranger_return 0.000
+  ranger_return 0
 )
 
-square_beacon( pose [ -0.88  0.63 0 0 ] )
-square_beacon( pose [ 0.88  0.63 0 0 ] )
-square_beacon( pose [ -0.88  -0.63 0 0 ] )
-square_beacon( pose [ 0.88  -0.63 0 0 ] )
+square_beacon( pose [ -0.880  0.630 0.000 0.000 ] )
+square_beacon( pose [ 0.880  0.630 0.000 0.000 ] )
+square_beacon( pose [ -0.880  -0.630 0.000 0.000 ] )
+square_beacon( pose [ 0.880  -0.630 0.000 0.000 ] )
+
+
+block(pose [ -9.902  -17.761 0.000 0.000 ] )
+block(pose [ -6.695  -16.576 0.000 0.000 ] )
+block(pose [ -9.714  -14.586 0.000 0.000 ] )
+block(pose [ -16.501  -18.082 0.000 0.000 ] )
+block_small(pose [ -13.232  -17.911 0.000 0.000 ] )
+block_small(pose [-12.908  -15.226 0.000 0.000 ] )
+block_small(pose [-16.233  -15.420 0.630 0.000 0 ] )
 
 robot_0_model(
-  pose [ 0.000 0.0 0.000 90.000 ]
+  pose [ 0.000 0.000 0.000 90.000 ]
   name "robot_0"
   color "blue"
 )

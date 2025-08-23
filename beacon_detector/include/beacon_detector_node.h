@@ -9,8 +9,9 @@
 #include <laser_geometry/laser_geometry.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>  
+#include <visualization_msgs/MarkerArray.h> 
 #include <string>
-
+#define RVIZ_VISUALIZATION
 
 class BeaconDetector {
 
@@ -26,6 +27,9 @@ class BeaconDetector {
         
         sensor_msgs::PointCloud2 pointCloud;
         std::string target_frame;
+
+        ros::Publisher markers_pub_;
+        void publishClusters(const std::vector<Cluster>& clusters);
 
         ros::Subscriber sensorDataSub;
         void processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan);

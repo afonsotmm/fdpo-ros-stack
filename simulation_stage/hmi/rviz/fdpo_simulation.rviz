@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /MarkerArray1
+        - /MarkerArray1/Namespaces1
       Splitter Ratio: 0.5616045594215393
     Tree Height: 558
   - Class: rviz/Selection
@@ -78,6 +80,16 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /dbscan_markers
+      Name: MarkerArray
+      Namespaces:
+        dbscan_centroid: false
+        dbscan_label: true
+        dbscan_points: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -105,7 +117,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -12.56502628326416
+      Angle: -12.530025482177734
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -115,10 +127,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 554.1593627929688
+      Scale: 398.0403747558594
       Target Frame: <Fixed Frame>
-      X: 0.07496193796396255
-      Y: 0.03253118321299553
+      X: 0.10078678280115128
+      Y: 0.15020184218883514
     Saved: ~
 Window Geometry:
   Displays:
