@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dbscan.h"
+
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -26,8 +28,9 @@ class BeaconDetector {
         std::string target_frame;
 
         ros::Subscriber sensorDataSub;
-        void processSensorData(sensor_msgs::LaserScanConstPtr scan);
-        
+        void processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan);
+        void pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out);
+        void dataClustering(std::vector<Point>& dataPoints);
 };
 
 

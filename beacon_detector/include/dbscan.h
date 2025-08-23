@@ -11,14 +11,29 @@ class Point{
 
     public:
         double x, y;
-
+        
         bool visited;
         int class_; // Noise, Unassigned, Core, Border
         std::vector<Point*> neighbours;
-        
-        Point(double x, double y, int class_);
+
+        Point(double x, double y);
 
 };
+
+namespace point_ns{
+
+    // Point's Possible Classes
+    enum{
+
+        Unassigned = 0,
+        Noise,
+        Border,
+        Core
+
+    }; 
+
+}
+
 
 struct Cluster {
 
@@ -33,16 +48,6 @@ class DBSCAN {
         // Parameters
         double eps, eps2;
         int minPoints;
-
-        // Point's Possible Classes
-        enum{
-
-            Unassigned = 0,
-            Noise,
-            Border,
-            Core
-
-        };
         
         std::vector<Point> points;
         std::vector<Cluster> clusters;
@@ -50,5 +55,6 @@ class DBSCAN {
         DBSCAN(std::vector<Point>& points, double eps, int minPoints);
         void pointNeighbours(Point& point_to_check);
         void clusteringAlgorithm();
+        void restart();
 
 };

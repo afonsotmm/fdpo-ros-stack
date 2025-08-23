@@ -14,12 +14,43 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
 BeaconDetector::~BeaconDetector() {
 
+    delete tf_listener;
 	delete tf_buffer;
-	delete tf_listener;
 
 }
 
-void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr scan) {
+void BeaconDetector::pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out)
+{
+    out.clear();
+
+    sensor_msgs::PointCloud2ConstIterator<float> iterX(cloud, "x");
+    sensor_msgs::PointCloud2ConstIterator<float> iterY(cloud, "y");
+
+    while ((iterX != iterX.end()) && (iterY != iterY.end())) {
+
+        Point point(*iterX, *iterY);
+        out.push_back(point);
+
+        ++iterX;
+        ++iterY;
+
+    }
+}
+
+void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
+
+    double eps;
+    nh.param<double>("eps", eps, 0.9);
+    
+    int minPoints;
+    nh.param<int>("minPoints", minPoints, 3);
+
+    DBSCAN dbscan(dataPoints, eps, minPoints);
+    dbscan.clusteringAlgorithm();
+
+}
+
+void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan) {
 
     laser_geometry::LaserProjection projector;
 
@@ -37,4 +68,10 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr sc
         return;
     }
 
+    std::vector<Point> dataPoints;
+    pointCloud2XY(pointCloud, dataPoints);
+    dataClustering(dataPoints);
 }
+
+
+

@@ -4,7 +4,7 @@
 //                               Point Class 
 // ---------------------------------------------------------------------------------------
 
-Point::Point(double x, double y, int class_): x(x), y(y), class_(class_), visited(false) {}
+Point::Point(double x, double y): x(x), y(y), class_(point_ns::Unassigned), visited(false) {}
 
 // ---------------------------------------------------------------------------------------
 //                               DBSCAN Class 
@@ -38,7 +38,7 @@ void DBSCAN::clusteringAlgorithm() {
 
         if(point.neighbours.size() >= minPoints) {
             // it's a Core point
-            point.class_ = Core;
+            point.class_ = point_ns::Core;
 
             Cluster cluster_aux;
             cluster_aux.points.push_back(&point);
@@ -57,16 +57,16 @@ void DBSCAN::clusteringAlgorithm() {
 
                     if(curr_point->neighbours.size() >= minPoints) {
 
-                        curr_point->class_ = Core;
+                        curr_point->class_ = point_ns::Core;
                         members.insert(members.end(), curr_point->neighbours.begin(), curr_point->neighbours.end());
 
                     }
 
-                    else curr_point->class_ = Border;
+                    else curr_point->class_ = point_ns::Border;
 
                 }
 
-                if(curr_point->class_ == Unassigned || curr_point->class_ == Noise) {
+                if(curr_point->class_ == point_ns::Unassigned || curr_point->class_ == point_ns::Noise) {
 
                     cluster_aux.points.push_back(curr_point);
 
@@ -78,8 +78,15 @@ void DBSCAN::clusteringAlgorithm() {
 
         }
 
-        else point.class_ = Noise;
+        else point.class_ = point_ns::Noise;
 
     }
+
+}
+
+void DBSCAN::restart() {
+
+    points.clear();
+    clusters.clear();
 
 }
