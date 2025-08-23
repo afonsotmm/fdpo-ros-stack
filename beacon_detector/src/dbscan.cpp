@@ -6,12 +6,44 @@
 
 Point::Point(double x, double y): x(x), y(y), class_(point_ns::Unassigned), visited(false) {}
 
+
+
+// ---------------------------------------------------------------------------------------
+//                               Cluster Class 
+// ---------------------------------------------------------------------------------------
+
+Cluster::Cluster(): centroid_x(-999.0), centroid_y(-999.0) {}
+
+void Cluster::computeCentroid() {
+
+    if(points.empty()) return;
+
+    double sum_x = 0.0, sum_y = 0.0;
+    int numPoints = points.size();
+
+    for(auto* point: points) {
+
+        sum_x += point->x;
+        sum_y += point->y; 
+
+    }
+
+    centroid_x = sum_x / numPoints;
+    centroid_y = sum_y / numPoints;
+
+}
+
+
+
 // ---------------------------------------------------------------------------------------
 //                               DBSCAN Class 
 // ---------------------------------------------------------------------------------------
+
 DBSCAN::DBSCAN(std::vector<Point>& points, double eps, int minPoints): points(points), eps(eps), eps2(eps*eps), minPoints(minPoints) {}
 
 void DBSCAN::pointNeighbours(Point& point_to_check) {
+
+    point_to_check.neighbours.clear();  
 
     for(auto& point: points) {
 
@@ -50,6 +82,8 @@ void DBSCAN::clusteringAlgorithm() {
                 Point* curr_point = members.front();
                 members.pop_front();
 
+                int initial_class = curr_point->class_;
+
                 if(!curr_point->visited) {
 
                     curr_point->visited = true;
@@ -66,7 +100,7 @@ void DBSCAN::clusteringAlgorithm() {
 
                 }
 
-                if(curr_point->class_ == point_ns::Unassigned || curr_point->class_ == point_ns::Noise) {
+                if(initial_class == point_ns::Unassigned || initial_class == point_ns::Noise) {
 
                     cluster_aux.points.push_back(curr_point);
 
@@ -74,6 +108,7 @@ void DBSCAN::clusteringAlgorithm() {
 
             }
 
+            cluster_aux.computeCentroid();
             clusters.push_back(cluster_aux);
 
         }

@@ -35,11 +35,14 @@ namespace point_ns{
 }
 
 
-struct Cluster {
+class Cluster {
 
-    std::vector<Point*> points;
-    double centroid_x, centroid_y;
+    public:
+        std::vector<Point*> points;
+        double centroid_x, centroid_y;
 
+        void computeCentroid();
+        
 };
 
 class DBSCAN {
