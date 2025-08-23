@@ -1,5 +1,4 @@
-#ifndef BEACON_DETECTOR_NODE_H
-#define BEACON_DETECTOR_NODE_H
+#pragma once
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
@@ -12,6 +11,7 @@
 
 
 class BeaconDetector {
+
     public:
         BeaconDetector(ros::NodeHandle& nh);
         virtual ~BeaconDetector();
@@ -27,11 +27,11 @@ class BeaconDetector {
 
         ros::Subscriber sensorDataSub;
         void processSensorData(sensor_msgs::LaserScanConstPtr scan);
+        
 };
 
 
 
-#endif // BEACON_DETECTOR_NODE_H
 
 
 
