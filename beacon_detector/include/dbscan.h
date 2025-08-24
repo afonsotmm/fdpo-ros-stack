@@ -34,7 +34,6 @@ namespace point_ns{
 
 }
 
-
 class Cluster {
 
     public:

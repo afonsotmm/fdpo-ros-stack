@@ -5,7 +5,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 	tf_buffer = new tf2_ros::Buffer();
 	tf_listener = new tf2_ros::TransformListener(*tf_buffer);
 
-    target_frame = "map";
+    target_frame = "base_link";
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
