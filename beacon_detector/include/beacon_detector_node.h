@@ -13,15 +13,20 @@
 #include <laser_geometry/laser_geometry.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>  
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <visualization_msgs/MarkerArray.h> 
+#include <xmlrpcpp/XmlRpcValue.h>
 #include <string>
+#include <unordered_map>
+
 #define RVIZ_VISUALIZATION
+
 
 struct Beacon {
 
-    public:
-        std::string id;
-        double x, y;
+    std::string name;
+    Pose pose;
+
 };
 
 class BeaconDetector {
@@ -33,8 +38,13 @@ class BeaconDetector {
     private:
         ros::NodeHandle& nh;
 
-        std::vector<Beacon> beacons;
+        std::vector<Beacon> beacons_globalFrame;
+        std::vector<Beacon> beacons_robotFrame;
+        std::vector<Pose> clustersCentroids_robotFrame;
+        std::unordered_map<std::string, int> beaconToCluster; // beacon_name -> cluster_index 
+        double maxMatchDist;
         void loadBeaconsFromParams();
+        void updateRobotFrameBeacons(const ros::Time& stamp);
         void matchBeaconsToClusters();
 
         std::string target_frame;
@@ -49,6 +59,7 @@ class BeaconDetector {
 
         ros::Publisher markers_pub_;
         void publishClusters(const std::vector<Cluster>& clusters);
+
 };
 
 
