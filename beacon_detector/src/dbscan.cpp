@@ -69,7 +69,7 @@ void DBSCAN::clusteringAlgorithm() {
         pointNeighbours(point);
 
         if(point.neighbours.size() >= minPoints) {
-            // it's a Core point
+            
             point.class_ = point_ns::Core;
 
             Cluster cluster_aux;

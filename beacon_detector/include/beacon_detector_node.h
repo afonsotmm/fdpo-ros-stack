@@ -1,3 +1,7 @@
+//
+//  Created by afonso on 17/08/2025
+//
+
 #pragma once
 
 #include "dbscan.h"
@@ -13,6 +17,13 @@
 #include <string>
 #define RVIZ_VISUALIZATION
 
+struct Beacon {
+
+    public:
+        std::string id;
+        double x, y;
+};
+
 class BeaconDetector {
 
     public:
@@ -22,19 +33,22 @@ class BeaconDetector {
     private:
         ros::NodeHandle& nh;
 
+        std::vector<Beacon> beacons;
+        void loadBeaconsFromParams();
+        void matchBeaconsToClusters();
+
+        std::string target_frame;
 		tf2_ros::Buffer *tf_buffer;
 		tf2_ros::TransformListener *tf_listener;
-        
         sensor_msgs::PointCloud2 pointCloud;
-        std::string target_frame;
-
-        ros::Publisher markers_pub_;
-        void publishClusters(const std::vector<Cluster>& clusters);
 
         ros::Subscriber sensorDataSub;
         void processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan);
         void pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out);
         void dataClustering(std::vector<Point>& dataPoints);
+
+        ros::Publisher markers_pub_;
+        void publishClusters(const std::vector<Cluster>& clusters);
 };
 
 
