@@ -7,8 +7,12 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
     target_frame = "base_link";
 
+    nh.param("max_match_dist", maxMatchDist, 0.2);
+
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
+
+    loadBeaconsFromParams();
 
     ROS_INFO("BeaconDetector instance created.");
 }
@@ -49,9 +53,111 @@ void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
     DBSCAN dbscan(dataPoints, eps, minPoints);
     dbscan.clusteringAlgorithm();
 
+    clustersCentroids_robotFrame.clear();
+
+    for(const auto& cluster: dbscan.clusters) {
+
+        clustersCentroids_robotFrame.push_back(cluster.centroid);
+
+    }
+
     #ifdef RVIZ_VISUALIZATION
     publishClusters(dbscan.clusters);
     #endif
+
+}
+
+void BeaconDetector::loadBeaconsFromParams() {
+
+    beacons_globalFrame.clear();
+
+    XmlRpc::XmlRpcValue beaconsParams;
+
+    if(nh.getParam("beacons", beaconsParams)) {
+
+        for(int beacon_id = 0; beacon_id < static_cast<int>(beaconsParams.size()); beacon_id++) {
+
+            Beacon beacon_temp;
+            
+            beacon_temp.name = static_cast<std::string>(beaconsParams[beacon_id]["name"]);
+            beacon_temp.pose.x =  static_cast<double>(beaconsParams[beacon_id]["x"]);
+            beacon_temp.pose.y =  static_cast<double>(beaconsParams[beacon_id]["y"]);
+
+            beacons_globalFrame.push_back(beacon_temp);
+        }
+
+    }
+
+    ROS_INFO("Loaded %zu beacons.", beacons_globalFrame.size());
+
+}
+
+void BeaconDetector::updateRobotFrameBeacons(const ros::Time& stamp) {
+
+    beacons_robotFrame.clear();
+    geometry_msgs::TransformStamped T_robot_map = tf_buffer->lookupTransform("base_link", "map", stamp, ros::Duration(0.2));
+
+    for(auto& beacon: beacons_globalFrame) {
+
+        geometry_msgs::PointStamped p_mapFrame, p_robotFrame;
+        p_mapFrame.header.frame_id = "map";
+        p_mapFrame.header.stamp = stamp;
+
+        p_mapFrame.point.x = beacon.pose.x;
+        p_mapFrame.point.y = beacon.pose.y;
+        p_mapFrame.point.z = 0.0;
+
+        tf2::doTransform(p_mapFrame, p_robotFrame, T_robot_map);
+
+        Beacon beacon_temp;
+        beacon_temp.name = beacon.name;
+        beacon_temp.pose.x = p_robotFrame.point.x;
+        beacon_temp.pose.y = p_robotFrame.point.y;
+
+        beacons_robotFrame.push_back(beacon_temp);
+    }
+
+}
+
+// Neste momento esta função depende da ordem no vetor dos beacons, portanto dps mudar para o global greedy ou Hungarian
+void BeaconDetector::matchBeaconsToClusters() {
+
+    beaconToCluster.clear();
+
+    std::vector<bool> used(clustersCentroids_robotFrame.size(), false);
+
+    double maxMatchDist2 = maxMatchDist * maxMatchDist;  
+
+    for(int beacon_index = 0; beacon_index <  static_cast<int>(beacons_robotFrame.size()); ++beacon_index) {
+
+        double bestDist2 = maxMatchDist2;
+        int bestMatch = -1;
+
+        for(int cluster_index = 0; cluster_index < static_cast<int>(clustersCentroids_robotFrame.size()); ++cluster_index) {
+            
+            if (used[cluster_index]) continue;
+
+            double dx = beacons_robotFrame[beacon_index].pose.x - clustersCentroids_robotFrame[cluster_index].x;
+            double dy = beacons_robotFrame[beacon_index].pose.y - clustersCentroids_robotFrame[cluster_index].y;
+
+            double dist2 = dx*dx + dy*dy;
+
+            if(dist2 < bestDist2) {
+
+                bestDist2 = dist2;
+                bestMatch = cluster_index;
+
+            }
+
+        } 
+        
+        if(bestMatch != -1) {
+            
+            beaconToCluster[beacons_robotFrame[beacon_index].name] = bestMatch;
+            used[bestMatch] = true;
+        
+        }
+    }
 
 }
 
@@ -76,6 +182,9 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     std::vector<Point> dataPoints;
     pointCloud2XY(pointCloud, dataPoints);
     dataClustering(dataPoints);
+    updateRobotFrameBeacons(scan->header.stamp);
+    matchBeaconsToClusters();
+
 }
 
 
@@ -128,7 +237,7 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     pts.points.reserve(cl.points.size());
     for (auto* p : cl.points) {
       geometry_msgs::Point gp;
-      gp.x = p->x; gp.y = p->y; gp.z = 0.0;
+      gp.x = p->pose.x; gp.y = p->pose.y; gp.z = 0.0;
       pts.points.push_back(gp);
     }
     arr.markers.push_back(pts);
@@ -140,8 +249,8 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     centroid.id = static_cast<int>(i);
     centroid.type = visualization_msgs::Marker::SPHERE;
     centroid.action = visualization_msgs::Marker::ADD;
-    centroid.pose.position.x = cl.centroid_x;
-    centroid.pose.position.y = cl.centroid_y;
+    centroid.pose.position.x = cl.centroid.x;
+    centroid.pose.position.y = cl.centroid.y;
     centroid.pose.position.z = 0.0;
     centroid.pose.orientation.w = 1.0;
     centroid.scale.x = centroid.scale.y = centroid.scale.z = 0.12;
@@ -156,8 +265,8 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     label.id = static_cast<int>(i);
     label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
     label.action = visualization_msgs::Marker::ADD;
-    label.pose.position.x = cl.centroid_x;
-    label.pose.position.y = cl.centroid_y;
+    label.pose.position.x = cl.centroid.x;
+    label.pose.position.y = cl.centroid.y;
     label.pose.position.z = 0.25;
     label.pose.orientation.w = 1.0;
     label.scale.z = 0.18;  // altura do texto (m)

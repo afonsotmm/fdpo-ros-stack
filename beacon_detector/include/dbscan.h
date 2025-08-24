@@ -7,10 +7,16 @@
 #include <vector>
 #include <deque>
 
+struct Pose {
+
+    double x, y;
+
+};
+
 class Point{
 
     public:
-        double x, y;
+        Pose pose;
         
         bool visited;
         int class_; // Noise, Unassigned, Core, Border
@@ -38,7 +44,7 @@ class Cluster {
 
     public:
         std::vector<Point*> points;
-        double centroid_x, centroid_y;
+        Pose centroid;
 
         Cluster();
         void computeCentroid();

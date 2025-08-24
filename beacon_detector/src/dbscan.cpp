@@ -4,35 +4,34 @@
 //                               Point Class 
 // ---------------------------------------------------------------------------------------
 
-Point::Point(double x, double y): x(x), y(y), class_(point_ns::Unassigned), visited(false) {}
-
+Point::Point(double x, double y): pose{x, y}, class_(point_ns::Unassigned), visited(false) {}
 
 
 // ---------------------------------------------------------------------------------------
 //                               Cluster Class 
 // ---------------------------------------------------------------------------------------
 
-Cluster::Cluster(): centroid_x(-999.0), centroid_y(-999.0) {}
+Cluster::Cluster(): centroid{-999.0, -999.0} {}
+
 
 void Cluster::computeCentroid() {
 
     if(points.empty()) return;
 
     double sum_x = 0.0, sum_y = 0.0;
-    int numPoints = points.size();
+    std::size_t numPoints = points.size();
 
     for(auto* point: points) {
 
-        sum_x += point->x;
-        sum_y += point->y; 
+        sum_x += point->pose.x;
+        sum_y += point->pose.y; 
 
     }
 
-    centroid_x = sum_x / numPoints;
-    centroid_y = sum_y / numPoints;
+    centroid.x = sum_x / static_cast<double>(numPoints);
+    centroid.y = sum_y / static_cast<double>(numPoints);
 
 }
-
 
 
 // ---------------------------------------------------------------------------------------
@@ -47,8 +46,8 @@ void DBSCAN::pointNeighbours(Point& point_to_check) {
 
     for(auto& point: points) {
 
-        double dx = point_to_check.x - point.x;
-        double dy = point_to_check.y - point.y;
+        double dx = point_to_check.pose.x - point.pose.x;
+        double dy = point_to_check.pose.y - point.pose.y;
 
         double eucl_dist = dx*dx + dy*dy;
         
@@ -68,7 +67,7 @@ void DBSCAN::clusteringAlgorithm() {
         
         pointNeighbours(point);
 
-        if(point.neighbours.size() >= minPoints) {
+        if(static_cast<int>(point.neighbours.size()) >= minPoints) {
             
             point.class_ = point_ns::Core;
 
@@ -89,7 +88,7 @@ void DBSCAN::clusteringAlgorithm() {
                     curr_point->visited = true;
                     pointNeighbours(*curr_point);
 
-                    if(curr_point->neighbours.size() >= minPoints) {
+                    if(static_cast<int>(curr_point->neighbours.size()) >= minPoints) {
 
                         curr_point->class_ = point_ns::Core;
                         members.insert(members.end(), curr_point->neighbours.begin(), curr_point->neighbours.end());

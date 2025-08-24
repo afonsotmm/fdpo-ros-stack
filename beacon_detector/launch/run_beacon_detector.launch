@@ -1,0 +1,3 @@
+<node name="beacon_detector_node" pkg="beacon_detector" type="beacon_detector_node" output="screen">
+  <rosparam file="$(find beacon_detector)/config/beacons_conf.yaml" command="load"/>
+</node>
