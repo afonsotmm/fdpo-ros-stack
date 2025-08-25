@@ -10,9 +10,12 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     nh.param("max_match_dist", maxMatchDist, 0.2);
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
-    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
 
+    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
+    beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
+    
     loadBeaconsFromParams();
+    publishBeaconsInMap();
 
     ROS_INFO("BeaconDetector instance created.");
 }
@@ -73,7 +76,7 @@ void BeaconDetector::loadBeaconsFromParams() {
 
     XmlRpc::XmlRpcValue beaconsParams;
 
-    if(nh.getParam("beacons", beaconsParams)) {
+    if(nh.getParam("/beacon_detector_node/beacons", beaconsParams)) {
 
         for(int beacon_id = 0; beacon_id < static_cast<int>(beaconsParams.size()); beacon_id++) {
 
@@ -95,7 +98,27 @@ void BeaconDetector::loadBeaconsFromParams() {
 void BeaconDetector::updateRobotFrameBeacons(const ros::Time& stamp) {
 
     beacons_robotFrame.clear();
-    geometry_msgs::TransformStamped T_robot_map = tf_buffer->lookupTransform("base_link", "map", stamp, ros::Duration(0.2));
+    geometry_msgs::TransformStamped T_robot_map;
+
+    try {
+        // tenta no timestamp da medição
+        T_robot_map = tf_buffer->lookupTransform("base_link", "map", stamp, ros::Duration(0.2));
+    } catch (const tf2::ExtrapolationException& ex) {
+        ROS_WARN_THROTTLE(1.0,
+          "TF extrapolation (base_link<-map) em t=%.3f; a usar latest. %s",
+          stamp.toSec(), ex.what());
+        try {
+            // fallback: última disponível
+            T_robot_map = tf_buffer->lookupTransform("base_link", "map",
+                                                     ros::Time(0));
+        } catch (const tf2::TransformException& ex2) {
+            ROS_WARN_THROTTLE(1.0, "Falha também no latest TF: %s", ex2.what());
+            return;
+        }
+    } catch (const tf2::TransformException& ex) {
+        ROS_WARN_THROTTLE(1.0, "TF lookup falhou (base_link<-map): %s", ex.what());
+        return;
+    }
 
     for(auto& beacon: beacons_globalFrame) {
 
@@ -184,6 +207,9 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     dataClustering(dataPoints);
     updateRobotFrameBeacons(scan->header.stamp);
     matchBeaconsToClusters();
+    #ifdef RVIZ_VISUALIZATION
+    publishBeaconAssociations();
+    #endif
 
 }
 
@@ -279,4 +305,133 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
   markers_pub_.publish(arr);
 }
 
+void BeaconDetector::publishBeaconAssociations() {
 
+    visualization_msgs::MarkerArray arr;
+    const ros::Time now = ros::Time::now();
+
+    // 1) Beacons previstos (no frame do robô)
+    for (std::size_t i = 0; i < beacons_robotFrame.size(); ++i) {
+        const auto& b = beacons_robotFrame[i];
+
+        // 1a) Esfera do beacon
+        visualization_msgs::Marker m;
+        m.header.frame_id = target_frame;
+        m.header.stamp    = now;
+        m.ns   = "beacons_pred";
+        m.id   = static_cast<int>(i);
+        m.type = visualization_msgs::Marker::SPHERE;
+        m.action = visualization_msgs::Marker::ADD;
+        m.pose.position.x = b.pose.x;
+        m.pose.position.y = b.pose.y;
+        m.pose.position.z = 0.0;
+        m.pose.orientation.w = 1.0;
+        m.scale.x = m.scale.y = m.scale.z = 0.10;   // tamanho da esfera
+        m.color.r = 1.0; m.color.g = 0.85; m.color.b = 0.10; m.color.a = 1.0; // “dourado”
+        m.lifetime = ros::Duration(0.2);
+        arr.markers.push_back(m);
+
+        // 1b) Label com nome (+ dist se houver match)
+        visualization_msgs::Marker label;
+        label.header = m.header;
+        label.ns = "beacon_name";
+        label.id = static_cast<int>(i);
+        label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+        label.action = visualization_msgs::Marker::ADD;
+        label.pose.position.x = b.pose.x;
+        label.pose.position.y = b.pose.y;
+        label.pose.position.z = 0.25;
+        label.pose.orientation.w = 1.0;
+        label.scale.z = 0.18;
+        label.color.r = 1.0; label.color.g = 1.0; label.color.b = 1.0; label.color.a = 1.0;
+        label.lifetime = ros::Duration(0.2);
+
+        // 2) Se existir associação, desenha linha e mostra distância no label
+        auto it = beaconToCluster.find(b.name);
+        if (it != beaconToCluster.end()) {
+        const int cidx = it->second;
+        if (cidx >= 0 && static_cast<std::size_t>(cidx) < clustersCentroids_robotFrame.size()) {
+            const auto& c = clustersCentroids_robotFrame[cidx];
+
+            // 2a) Linha beacon -> centróide
+            visualization_msgs::Marker line;
+            line.header = m.header;
+            line.ns = "beacon_assoc";
+            line.id = static_cast<int>(i);
+            line.type = visualization_msgs::Marker::LINE_LIST;
+            line.action = visualization_msgs::Marker::ADD;
+            line.scale.x = 0.03; // espessura
+            line.color.r = 0.10; line.color.g = 0.90; line.color.b = 0.20; line.color.a = 1.0; // verde
+            line.lifetime = ros::Duration(0.2);
+
+            geometry_msgs::Point p1, p2;
+            p1.x = b.pose.x; p1.y = b.pose.y; p1.z = 0.0;
+            p2.x = c.x;      p2.y = c.y;      p2.z = 0.0;
+            line.points.push_back(p1);
+            line.points.push_back(p2);
+            arr.markers.push_back(line);
+
+            const double d = std::hypot(c.x - b.pose.x, c.y - b.pose.y);
+            label.text = b.name + "  (" + std::to_string(d).substr(0,4) + " m)";
+        } else {
+            label.text = b.name + "  (sem idx)";
+        }
+        } else {
+        // sem match → label em vermelho claro
+        label.text = b.name + "  (sem match)";
+        label.color.r = 1.0; label.color.g = 0.4; label.color.b = 0.4; label.color.a = 1.0;
+        }
+
+        arr.markers.push_back(label);
+    }
+
+    // Publica (sem DELETEALL aqui — já o fizeste nos clusters)
+    markers_pub_.publish(arr);
+}
+
+void BeaconDetector::publishBeaconsInMap() {
+  visualization_msgs::MarkerArray arr;
+
+  // limpa anteriores deste tópico (sem afetar os clusters noutro tópico)
+  {
+    visualization_msgs::Marker clear;
+    clear.action = visualization_msgs::Marker::DELETEALL;
+    arr.markers.push_back(clear);
+  }
+
+  const ros::Time now = ros::Time::now();
+
+  for (std::size_t i = 0; i < beacons_globalFrame.size(); ++i) {
+    const auto& b = beacons_globalFrame[i];
+
+    // esfera no frame MAP (fixa no mundo)
+    visualization_msgs::Marker m;
+    m.header.frame_id = "map";
+    m.header.stamp    = now;
+    m.ns   = "beacons_map";
+    m.id   = static_cast<int>(i);
+    m.type = visualization_msgs::Marker::SPHERE;
+    m.action = visualization_msgs::Marker::ADD;
+    m.pose.orientation.w = 1.0;
+    m.pose.position.x = b.pose.x;
+    m.pose.position.y = b.pose.y;
+    m.pose.position.z = 0.0;
+    m.scale.x = m.scale.y = m.scale.z = 0.15;           // tamanho da esfera
+    m.color.r = 0.10; m.color.g = 0.85; m.color.b = 1.0; // ciano para distinguir dos “dourados”
+    m.color.a = 1.0;
+    m.lifetime = ros::Duration(0.0); // infinito
+    arr.markers.push_back(m);
+
+    // label com o nome
+    visualization_msgs::Marker label = m;
+    label.ns   = "beacons_map_label";
+    label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    label.pose.position.z = 0.25;
+    label.scale.z = 0.18;
+    label.color.r = 1.0; label.color.g = 1.0; label.color.b = 1.0;
+    label.text = b.name;
+    arr.markers.push_back(label);
+  }
+
+  beacons_map_pub_.publish(arr);
+}

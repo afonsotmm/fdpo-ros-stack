@@ -124,6 +124,7 @@ define robot_0_model position(
   #if "gps" the position model reports its position with perfect accuracy.
   #If "odom", a simple odometry model is used and position data drifts from the ground truth over time.
   #The odometry model is parameterized by the odom_error property
+  localization "odom"
   #specify the position of the object's center, relative to its pose, origin [ x:<float> y:<float> z:<float> heading:<float> ]
   origin [0.000 0.000 0.000 0.000]
 
@@ -133,8 +134,8 @@ define robot_0_model position(
   #Each value is the maximum proportion of error in intergrating x, y, and theta velocities to compute odometric position estimate.
   #For each axis, if the the value specified here is E, the actual proportion is chosen at startup at random in the range -E/2 to +E/2.
   #Note that due to rounding errors, setting these values to zero does NOT give you perfect localization - for that you need to choose localization "gps".
-  odom_error [0.001 0.0003 00.00 0.2]
-
+  odom_error [ 10 10 00.00 0]
+	
   # GUI properties
   #if 1, draw a nose on the model showing its heading (positive X axis)
   gui_nose 0
@@ -159,7 +160,7 @@ block_small(pose [-12.908  -15.226 0.000 0.000 ] )
 block_small(pose [-16.233  -15.420 0.630 0.000 0 ] )
 
 robot_0_model(
-  pose [ 0.000 0.000 0.000 90.000 ]
+  pose [ 0.000 0.000 0.000 0.000 ]
   name "robot_0"
   color "blue"
 )
