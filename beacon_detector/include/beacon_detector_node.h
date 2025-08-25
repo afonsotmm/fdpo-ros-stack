@@ -18,6 +18,7 @@
 #include <xmlrpcpp/XmlRpcValue.h>
 #include <string>
 #include <unordered_map>
+#include <cmath>
 
 #define RVIZ_VISUALIZATION
 
@@ -59,7 +60,9 @@ class BeaconDetector {
 
         ros::Publisher markers_pub_;
         void publishClusters(const std::vector<Cluster>& clusters);
-
+        void publishBeaconAssociations();
+        ros::Publisher beacons_map_pub_; 
+        void publishBeaconsInMap();    
 };
 
 

@@ -11,7 +11,10 @@ find_package(catkin REQUIRED COMPONENTS
   laser_geometry
   tf2_ros
   tf2_sensor_msgs
-  visualization_msgs      
+  tf2_geometry_msgs       
+  visualization_msgs
+  geometry_msgs             
+  xmlrpcpp                 
 )
 
 catkin_package(
@@ -21,7 +24,10 @@ catkin_package(
     laser_geometry
     tf2_ros
     tf2_sensor_msgs
-    visualization_msgs    
+    tf2_geometry_msgs      
+    visualization_msgs
+    geometry_msgs          
+    xmlrpcpp                
 )
 
 include_directories(
@@ -32,7 +38,7 @@ include_directories(
 add_executable(beacon_detector_node
   src/main.cpp
   src/beacon_detector_node.cpp
-  src/dbscan.cpp          
+  src/dbscan.cpp
 )
 
 add_dependencies(beacon_detector_node ${catkin_EXPORTED_TARGETS})
@@ -40,3 +46,4 @@ add_dependencies(beacon_detector_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(beacon_detector_node
   ${catkin_LIBRARIES}
 )
+
