@@ -14,8 +14,9 @@
       <node pkg="rviz" type="rviz" name="rviz" output="screen" required="false"
             args="-d $(arg rviz_config)"/>
 
-      <node pkg="navigation_controller" type="navigation_controller_node" name="navigation_controller_node">
-      	     <!--rosparam file="$(find beacon_detector)/launch/beacons_info.yaml" command="load"/-->
+      <node pkg="navigation_controller" type="navigation_controller_node" name="navigation_controller">
+            <rosparam file="$(find navigation_controller)/launch/route.yaml" command="load"/>
+            <rosparam file="$(find navigation_controller)/launch/navigation_parameters.yaml" command="load"/>
       </node>
 
 	<!-- Hack temporário: map = odom -->
