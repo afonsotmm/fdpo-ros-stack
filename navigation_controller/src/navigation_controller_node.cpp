@@ -2,23 +2,26 @@
 
 NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), navigationFsm(navigation::states::idle) {
     
+    mode = "stop";
     goSignal = false;
 
-    // load parameters
+    // load navigation parameters
     nh.param("v_nom", param.v_nom, 0.4);
     nh.param("w_nom", param.w_nom, 1.2);
-    nh.param("k_p",   param.k_p,   5.0);
+    nh.param("k_p", param.k_p, 5.0);
     nh.param("arrive_radius",  param.arrive_radius, 0.05);
-    nh.param("yaw_tol",  param.yaw_tol, 0.08);
-    nh.param("loop_rate_hz",   param.loop_rate_hz,  30);
+    nh.param("yaw_tol",param.yaw_tol, 0.08);
+    nh.param("loop_rate_hz", param.loop_rate_hz, 30);
+    
+    //load RViz parameters
+    nh.param("rviz_append", rvizGoalAppend, false);
 
     // ros init
     odomSub = nh.subscribe("/odom", 10, &NavigationController::updateCurrPose, this);
+    rvizGoalSub = nh.subscribe("/move_base_simple/goal", 10, &NavigationController::rvizGoalCallBack, this);
     velPub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
-    controlTimer = nh.createTimer(ros::Duration(1.0 / std::max(1, param.loop_rate_hz)), &NavigationController::controlLoop, this);
-
-    // load route
-    loadRouteFromParameters();
+    controlTimer = nh.createTimer(ros::Duration(1.0 / std::max(1, param.loop_rate_hz)), &NavigationController::navigationFsmRunner, this);
+    controlSrv = nh.advertiseService("control", &NavigationController::controlSrvCb, this);
 
     ROS_INFO("NavigationController instace created");
 }
@@ -87,6 +90,24 @@ void NavigationController::updateCurrPose(const nav_msgs::Odometry::ConstPtr& ms
 
 }
 
+void NavigationController::rvizGoalCallBack(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+
+    if(!rvizGoalAppend) route.clear();
+
+    WayPoint waypoint_temp;
+
+    waypoint_temp.id = route.empty() ? 0 : (route.back().id + 1);    
+    waypoint_temp.pose.x = msg->pose.position.x;
+    waypoint_temp.pose.y = msg->pose.position.y;
+    waypoint_temp.pose.theta = tf2::getYaw(msg->pose.orientation);
+    waypoint_temp.align = true;
+
+    route.push_back(waypoint_temp);
+
+    updateDesiredPose();
+
+}
+
 void NavigationController::publishVel() {
 
     geometry_msgs::Twist cmd;
@@ -106,6 +127,13 @@ double NavigationController::normalizeAngle(double theta) {
     while (theta <= -M_PI) theta += 2.0*M_PI;
 
     return theta;
+}
+
+void NavigationController::hardStop() {
+
+    w_d = v_d = 0.0;
+    publishVel();
+
 }
 
 void NavigationController::setTheta() {
@@ -154,33 +182,25 @@ void NavigationController::goToXY() {
 
 }
 
-void NavigationController::controlLoop(const ros::TimerEvent&) {
+void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     navigationFsm.update_tis();
+    bool enable = (mode == "start" || mode == "unpause") && !route.empty();
 
     // Compute Transitions
-    if(navigationFsm.state == navigation::states::idle && goSignal) {
+    if(navigationFsm.state == navigation::states::idle && goSignal && enable) {
 
         navigationFsm.new_state = navigation::states::driveToGoal;
 
     }
 
-    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && route.front().align) {
+    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && route.front().align && enable) {
 
         navigationFsm.new_state = navigation::states::turnToFinalYaw;
 
     }
 
-    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && !route.front().align) {
-
-        route.pop_front();
-        updateDesiredPose();
-
-        navigationFsm.new_state = navigation::states::done;
-
-    }
-
-    else if(navigationFsm.state == navigation::states::turnToFinalYaw && checkYawArrived()) {
+    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && !route.front().align && enable) {
 
         route.pop_front();
         updateDesiredPose();
@@ -189,13 +209,22 @@ void NavigationController::controlLoop(const ros::TimerEvent&) {
 
     }
 
-    else if(navigationFsm.state == navigation::states::done && goSignal) {
+    else if(navigationFsm.state == navigation::states::turnToFinalYaw && checkYawArrived() && enable) {
+
+        route.pop_front();
+        updateDesiredPose();
+        
+        navigationFsm.new_state = navigation::states::done;
+
+    }
+
+    else if(navigationFsm.state == navigation::states::done && goSignal && enable) {
 
         navigationFsm.new_state = navigation::states::driveToGoal;
 
     }
 
-    else if(navigationFsm.state == navigation::states::done && !goSignal) {
+    else if(navigationFsm.state == navigation::states::done && !goSignal && enable) {
 
         navigationFsm.new_state = navigation::states::idle;
 
@@ -206,10 +235,64 @@ void NavigationController::controlLoop(const ros::TimerEvent&) {
 
     // Compute Actions
     if(navigationFsm.state == navigation::states::driveToGoal) goToXY();
-    else if(navigationFsm.state == navigation::states::turnToFinalYaw) setTheta();
+    else if(navigationFsm.state == navigation::states::turnToFinalYaw && enable) setTheta();
     else v_d = w_d = 0.0;
 
     // Affect outputs
     publishVel();
+
+}
+
+bool NavigationController::controlSrvCb(navigation_controller::NavigationControl::Request& req, navigation_controller::NavigationControl::Response& res) {
+
+    mode = req.command;
+
+    if(mode == "start") {
+
+        loadRouteFromParameters();
+
+        if (route.empty()) {
+            res.success = false; res.message = "no waypoints in params";
+            return true;
+        }
+
+        res.success = true;  res.message = "started";
+        ROS_INFO("Navigation START");
+        return true;
+
+    }
+
+    else if(mode == "stop") {
+
+        route.clear();
+        navigationFsm.new_state = navigation::states::idle;
+        poseDesired = poseCurr;
+        navigationFsm.set_state();
+
+        res.success = true; res.message = "stopped+cleared";
+        ROS_INFO("Navigation STOP");
+        return true;
+
+    }
+
+    else if(mode == "pause") {
+
+        navigationFsm.new_state = navigation::states::idle;
+        navigationFsm.set_state();
+
+        res.success = true; res.message = "paused";
+        ROS_INFO("Navigation PAUSE");
+        return true;
+
+    }
+
+    else if(mode == "unpause") {
+
+        res.success = true; res.message = "unpaused";
+        ROS_INFO("Navigation UNPAUSE");
+        return true;
+
+    }
+
 
 }
