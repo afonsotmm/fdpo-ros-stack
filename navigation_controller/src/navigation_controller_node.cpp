@@ -3,7 +3,6 @@
 NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), navigationFsm(navigation::states::idle) {
     
     mode = "stop";
-    goSignal = false;
 
     // load navigation parameters
     nh.param("v_nom", param.v_nom, 0.4);
@@ -28,13 +27,8 @@ NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(
 
 void NavigationController::updateDesiredPose() {
 
-    goSignal = false;
-
     if (!route.empty()) {
-        
-        goSignal = true;
         poseDesired = route.front().pose;
-
         ROS_INFO("New waypoint: x=%.2f y=%.2f yaw=%.2f", poseDesired.x, poseDesired.y, poseDesired.theta);
     }
 
@@ -54,6 +48,7 @@ void NavigationController::loadRouteFromParameters(){
         waypoint_temp.pose.y = static_cast<double>(waypoints[i]["y"]);
         waypoint_temp.pose.theta = static_cast<double>(waypoints[i]["yaw"]);
         waypoint_temp.align = static_cast<bool>(waypoints[i]["align"]);
+        waypoint_temp.backwards = static_cast<bool>(waypoints[i]["backwards"]);
         ROS_INFO("Waypoint: x=%.2f y=%.2f yaw=%.2f", waypoint_temp.pose.x, waypoint_temp.pose.y, waypoint_temp.pose.theta);
 
         route.push_back(waypoint_temp);
@@ -101,6 +96,7 @@ void NavigationController::rvizGoalCallBack(const geometry_msgs::PoseStamped::Co
     waypoint_temp.pose.y = msg->pose.position.y;
     waypoint_temp.pose.theta = tf2::getYaw(msg->pose.orientation);
     waypoint_temp.align = true;
+    waypoint_temp.backwards = false;
 
     route.push_back(waypoint_temp);
 
@@ -159,7 +155,9 @@ void NavigationController::goToXY() {
 
     double position_error = std::hypot(poseDesired.x - poseCurr.x, poseDesired.y - poseCurr.y);
     double theta_d = std::atan2(poseDesired.y - poseCurr.y, poseDesired.x - poseCurr.x);
-    double yaw_error = normalizeAngle(theta_d - poseCurr.theta); 
+    bool back = !route.empty() ? route.front().backwards : false;
+    double theta_virtual = poseCurr.theta + (back ? M_PI : 0.0);
+    double yaw_error = normalizeAngle(theta_d - theta_virtual); 
 
     if(position_error <= param.arrive_radius) {
 
@@ -176,9 +174,10 @@ void NavigationController::goToXY() {
     else if(w_d < -param.w_nom) w_d = -param.w_nom;
 
     // linear
-    if(std::fabs(yaw_error) > M_PI/8.0) v_d = 0.0;
-    else if(yaw_error <= M_PI/8.0) v_d = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.k_p * position_error);
+    double v_mag = 0.0;
+    if(std::fabs(yaw_error) <= M_PI/8.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.k_p * position_error);
 
+    v_d = back ? -v_mag : v_mag;
 
 }
 
@@ -188,7 +187,7 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
     bool enable = (mode == "start" || mode == "unpause") && !route.empty();
 
     // Compute Transitions
-    if(navigationFsm.state == navigation::states::idle && goSignal && enable) {
+    if(navigationFsm.state == navigation::states::idle && enable) {
 
         navigationFsm.new_state = navigation::states::driveToGoal;
 
@@ -218,13 +217,13 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     }
 
-    else if(navigationFsm.state == navigation::states::done && goSignal && enable) {
+    else if(navigationFsm.state == navigation::states::done && enable) {
 
         navigationFsm.new_state = navigation::states::driveToGoal;
 
     }
 
-    else if(navigationFsm.state == navigation::states::done && !goSignal && enable) {
+    else if(navigationFsm.state == navigation::states::done && !enable) {
 
         navigationFsm.new_state = navigation::states::idle;
 

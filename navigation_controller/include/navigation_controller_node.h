@@ -30,6 +30,7 @@ struct WayPoint {
     int id;
     Pose pose;
     bool align;
+    bool backwards;
 
 };
 
@@ -69,7 +70,6 @@ class NavigationController {
         void goToXY();
 
         std::deque<WayPoint> route;
-        bool goSignal;
         void updateDesiredPose();
         void loadRouteFromParameters();
         
