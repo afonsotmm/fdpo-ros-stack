@@ -1,0 +1,6 @@
+v_nom: 0.4
+w_nom: 1.2
+k_p: 5.0            # ~1/lambda (lambda≈0.2)
+arrive_radius: 0.05
+yaw_tol: 0.015
+loop_rate_hz: 30
