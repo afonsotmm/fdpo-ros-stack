@@ -12,13 +12,32 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_geometry_msgs
+  message_generation       
 )
 
-# Exporta include/ para quem (no futuro) usar as tuas headers
+## ---- serviços/messages ----
+add_service_files(
+  FILES
+  NavigationControl.srv    
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+## ---- pacote ----
 catkin_package(
   INCLUDE_DIRS include
-  # LIBRARIES (nenhuma lib própria por agora)
-  # CATKIN_DEPENDS roscpp std_msgs geometry_msgs nav_msgs tf2 tf2_ros tf2_geometry_msgs
+  CATKIN_DEPENDS
+    roscpp
+    std_msgs
+    geometry_msgs
+    nav_msgs
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
+    message_runtime       
 )
 
 include_directories(
@@ -26,21 +45,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# Executável com TODOS os fontes
+## ---- executável ----
 add_executable(navigation_controller_node
   src/main.cpp
   src/navigation_controller_node.cpp
   src/fsm.cpp
 )
 
-add_dependencies(navigation_controller_node ${catkin_EXPORTED_TARGETS})
+# Garante que o node só compila após gerar o header do serviço
+add_dependencies(navigation_controller_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
 
 target_link_libraries(navigation_controller_node
   ${catkin_LIBRARIES}
 )
-
-# (Opcional) instalação
-# install(TARGETS navigation_controller_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-# install(DIRECTORY launch config
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

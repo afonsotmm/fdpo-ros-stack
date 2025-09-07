@@ -12,6 +12,9 @@
 #include <algorithm>
 #include <deque> 
 #include <XmlRpcValue.h>
+#include <geometry_msgs/PoseStamped.h> 
+#include <navigation_controller/NavigationControl.h> 
+#include <string>
 
 #include "fsm.h"
 
@@ -38,6 +41,8 @@ class NavigationController {
     private:
         ros::NodeHandle& nh;
 
+        std::string mode; // "start" | "pause" | "unpause" | "stop""
+
         Fsm navigationFsm;
         Pose poseCurr, poseDesired;
         double v_d, w_d;
@@ -59,6 +64,7 @@ class NavigationController {
         bool checkPositionArrived();
         bool checkYawArrived();
 
+        void hardStop();
         void setTheta();
         void goToXY();
 
@@ -74,7 +80,15 @@ class NavigationController {
         void publishVel();
 
         ros::Timer controlTimer;
-        void controlLoop(const ros::TimerEvent&);
+        void navigationFsmRunner(const ros::TimerEvent&);
+
+        bool rvizGoalAppend;
+        ros::Subscriber rvizGoalSub;
+        void rvizGoalCallBack(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
+        // Services        
+        ros::ServiceServer controlSrv; 
+        bool controlSrvCb(navigation_controller::NavigationControl::Request& req, navigation_controller::NavigationControl::Response& res);
 
 };
 

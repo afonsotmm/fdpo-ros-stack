@@ -9,6 +9,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <!-- deps normais -->
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -17,8 +18,10 @@
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
 
-  <!-- (opcional) se fores distribuir launchs -->
-  <!-- <exec_depend>roslaunch</exec_depend> -->
+  <!-- geração de mensagens/serviços -->
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>message_generation</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
 
   <export/>
 </package>
