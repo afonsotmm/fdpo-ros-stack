@@ -15,6 +15,8 @@
 #include <geometry_msgs/PoseStamped.h> 
 #include <navigation_controller/NavigationControl.h> 
 #include <string>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include "fsm.h"
 
@@ -42,9 +44,14 @@ class NavigationController {
     private:
         ros::NodeHandle& nh;
 
+        tf2_ros::Buffer tfBuffer;
+        tf2_ros::TransformListener tfListener;
+        Pose poseDesiredMap;
+
         std::string mode; // "start" | "pause" | "unpause" | "stop""
 
         Fsm navigationFsm;
+        // both with respect to the odom frame
         Pose poseCurr, poseDesired;
         double v_d, w_d;
         
@@ -71,6 +78,7 @@ class NavigationController {
 
         std::deque<WayPoint> route;
         void updateDesiredPose();
+        bool desiredPoseFromMapToOdom();
         void loadRouteFromParameters();
         
         ros::Subscriber odomSub;

@@ -1,6 +1,7 @@
 #include "navigation_controller_node.h"
 
-NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), navigationFsm(navigation::states::idle) {
+NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), 
+navigationFsm(navigation::states::idle), tfBuffer(), tfListener(tfBuffer) {
     
     mode = "stop";
 
@@ -25,11 +26,45 @@ NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(
     ROS_INFO("NavigationController instace created");
 }
 
+bool NavigationController::desiredPoseFromMapToOdom() {
+
+    try {
+
+        geometry_msgs::PoseStamped poseMap, poseOdom;
+        poseMap.header.stamp = ros::Time(0);     
+        poseMap.header.frame_id = "map";
+        poseMap.pose.position.x = poseDesiredMap.x;
+        poseMap.pose.position.y = poseDesiredMap.y;
+        poseMap.pose.position.z = 0.0;
+        
+        tf2::Quaternion q;
+        q.setRPY(0, 0, poseDesiredMap.theta);
+        poseMap.pose.orientation = tf2::toMsg(q);
+
+        poseOdom = tfBuffer.transform(poseMap, "odom", ros::Duration(0.05));
+
+        poseDesired.x = poseOdom.pose.position.x;
+        poseDesired.y = poseOdom.pose.position.y;
+        poseDesired.theta = tf2::getYaw(poseOdom.pose.orientation);
+        return true;
+    }
+    catch (const tf2::TransformException& ex) {
+        ROS_WARN_THROTTLE(1.0, "TF transform map->odom failed: %s", ex.what());
+        return false;
+    }
+
+}
+
 void NavigationController::updateDesiredPose() {
 
-    if (!route.empty()) {
-        poseDesired = route.front().pose;
-        ROS_INFO("New waypoint: x=%.2f y=%.2f yaw=%.2f", poseDesired.x, poseDesired.y, poseDesired.theta);
+    if(route.empty()) return;
+
+    poseDesiredMap = route.front().pose;
+
+    if (!desiredPoseFromMapToOdom()) {
+        ROS_INFO("map->odom TF unavailable");
+    } else {
+        ROS_INFO("New waypoint (map): x=%.2f y=%.2f yaw=%.2f  -> transformed to odom", poseDesiredMap.x, poseDesiredMap.y, poseDesiredMap.theta);
     }
 
 }
@@ -183,8 +218,10 @@ void NavigationController::goToXY() {
 
 void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
+    // Update's
     navigationFsm.update_tis();
     bool enable = (mode == "start" || mode == "unpause") && !route.empty();
+    if (!route.empty()) desiredPoseFromMapToOdom();
 
     // Compute Transitions
     if(navigationFsm.state == navigation::states::idle && enable) {
