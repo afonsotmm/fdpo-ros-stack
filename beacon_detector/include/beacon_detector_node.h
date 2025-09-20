@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include "pose.h"
+#include "point.h"
+#include "cluster.h"
 #include "dbscan.h"
+#include "beacon_detector/Pose.h"
+#include "beacon_detector/Cluster.h"
+#include "beacon_detector/BeaconMatch.h"
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
@@ -18,6 +24,7 @@
 #include <xmlrpcpp/XmlRpcValue.h>
 #include <string>
 #include <unordered_map>
+#include <tuple>
 #include <cmath>
 
 #define RVIZ_VISUALIZATION
@@ -39,10 +46,12 @@ class BeaconDetector {
     private:
         ros::NodeHandle& nh;
 
+        std::vector<Cluster> clusters;
         std::vector<Beacon> beacons_globalFrame;
         std::vector<Beacon> beacons_robotFrame;
         std::vector<Pose> clustersCentroids_robotFrame;
         std::unordered_map<std::string, int> beaconToCluster; // beacon_name -> cluster_index 
+
         double maxMatchDist;
         void loadBeaconsFromParams();
         void updateRobotFrameBeacons(const ros::Time& stamp);
@@ -57,6 +66,9 @@ class BeaconDetector {
         void processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan);
         void pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out);
         void dataClustering(std::vector<Point>& dataPoints);
+
+        ros::Publisher beaconStimation_pub;
+        void publishBeaconsStimation();
 
         ros::Publisher markers_pub_;
         void publishClusters(const std::vector<Cluster>& clusters);

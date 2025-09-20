@@ -4,52 +4,11 @@
 
 #pragma once
 
+#include "point.h"
+#include "cluster.h"
+
 #include <vector>
 #include <deque>
-
-struct Pose {
-
-    double x, y;
-
-};
-
-class Point{
-
-    public:
-        Pose pose;
-        
-        bool visited;
-        int class_; // Noise, Unassigned, Core, Border
-        std::vector<Point*> neighbours;
-
-        Point(double x, double y);
-
-};
-
-namespace point_ns{
-
-    // Point's Possible Classes
-    enum{
-
-        Unassigned = 0,
-        Noise,
-        Border,
-        Core
-
-    }; 
-
-}
-
-class Cluster {
-
-    public:
-        std::vector<Point*> points;
-        Pose centroid;
-
-        Cluster();
-        void computeCentroid();
-        
-};
 
 class DBSCAN {
 

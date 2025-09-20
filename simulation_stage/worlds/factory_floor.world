@@ -156,6 +156,9 @@ square_beacon( pose [ -0.880  -0.630 0.000 0.000 ] )
 square_beacon( pose [ 0.880  -0.630 0.000 0.000 ] )
 
 
+square_beacon( pose [ 10 10 0.000 0.000 ] )
+
+
 block(pose [ -9.902  -17.761 0.000 0.000 ] )
 block(pose [ -6.695  -16.576 0.000 0.000 ] )
 block(pose [ -9.714  -14.586 0.000 0.000 ] )

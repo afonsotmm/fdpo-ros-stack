@@ -1,5 +1,9 @@
 #include "beacon_detector_node.h"
 
+// ---------------------------------------------------------------------------------------
+//                               BeaconDetector Class 
+// ---------------------------------------------------------------------------------------
+
 BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
 	tf_buffer = new tf2_ros::Buffer();
@@ -10,6 +14,8 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     nh.param("max_match_dist", maxMatchDist, 0.2);
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
+
+    beaconStimation_pub = nh.advertise<beacon_detector::BeaconMatch>("beacon_stimation", 1);
 
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
     beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
@@ -47,6 +53,8 @@ void BeaconDetector::pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::v
 
 void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
 
+    clusters.clear();
+
     double eps;
     nh.param<double>("eps", eps, 0.07);
     
@@ -60,6 +68,7 @@ void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
 
     for(const auto& cluster: dbscan.clusters) {
 
+        clusters.push_back(cluster);
         clustersCentroids_robotFrame.push_back(cluster.centroid);
 
     }
@@ -184,6 +193,41 @@ void BeaconDetector::matchBeaconsToClusters() {
 
 }
 
+void BeaconDetector::publishBeaconsStimation() {
+
+    beacon_detector::BeaconMatch beacons_aux;
+
+    for(const auto& beacon: beacons_robotFrame) {
+
+        Cluster cluster_aux;
+        int cluster_index = beaconToCluster[beacon.name];
+        cluster_aux = clusters[cluster_index];
+        int numPoints = static_cast<int>(cluster_aux.points.size());
+
+        beacon_detector::Cluster cluster_msg;
+        cluster_msg.beacon_match_name = beacon.name;
+        cluster_msg.num_points = numPoints;
+        cluster_msg.centroid.x = cluster_aux.centroid.x;
+        cluster_msg.centroid.y = cluster_aux.centroid.y;
+
+        for(int point_id = 0; point_id < numPoints; ++point_id) {
+
+            beacon_detector::Pose point_aux; 
+            point_aux.x = cluster_aux.points[point_id]->pose.x;
+            point_aux.y = cluster_aux.points[point_id]->pose.y;
+
+            cluster_msg.points.push_back(point_aux);
+
+        }
+
+        beacons_aux.clusters.push_back(cluster_msg);
+
+    }
+
+    beaconStimation_pub.publish(beacons_aux);
+
+}
+
 void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& scan) {
 
     laser_geometry::LaserProjection projector;
@@ -207,6 +251,8 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     dataClustering(dataPoints);
     updateRobotFrameBeacons(scan->header.stamp);
     matchBeaconsToClusters();
+    publishBeaconsStimation();
+
     #ifdef RVIZ_VISUALIZATION
     publishBeaconAssociations();
     #endif
@@ -214,11 +260,10 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
 }
 
 
-// ---------------------------------------------------------------------------------------
-//                               RViz Visualization 
-// ---------------------------------------------------------------------------------------
+// RViz Visualization ------------------------------------------------------------
+
 namespace {
-// paleta simples e estável por id
+
     inline void colorFromId(std_msgs::ColorRGBA& c, std::size_t id) {
         static const float palette[][3] = {
             {0.90f,0.10f,0.10f}, {0.10f,0.60f,0.95f}, {0.10f,0.75f,0.20f},
@@ -228,7 +273,7 @@ namespace {
         const auto& rgb = palette[id % (sizeof(palette)/sizeof(palette[0]))];
         c.r = rgb[0]; c.g = rgb[1]; c.b = rgb[2]; c.a = 1.0f;
     }
-} // anon ns
+} 
 
 void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
   visualization_msgs::MarkerArray arr;

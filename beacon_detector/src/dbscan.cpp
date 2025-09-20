@@ -1,44 +1,10 @@
 #include "dbscan.h"
 
 // ---------------------------------------------------------------------------------------
-//                               Point Class 
-// ---------------------------------------------------------------------------------------
-
-Point::Point(double x, double y): pose{x, y}, class_(point_ns::Unassigned), visited(false) {}
-
-
-// ---------------------------------------------------------------------------------------
-//                               Cluster Class 
-// ---------------------------------------------------------------------------------------
-
-Cluster::Cluster(): centroid{-999.0, -999.0} {}
-
-
-void Cluster::computeCentroid() {
-
-    if(points.empty()) return;
-
-    double sum_x = 0.0, sum_y = 0.0;
-    std::size_t numPoints = points.size();
-
-    for(auto* point: points) {
-
-        sum_x += point->pose.x;
-        sum_y += point->pose.y; 
-
-    }
-
-    centroid.x = sum_x / static_cast<double>(numPoints);
-    centroid.y = sum_y / static_cast<double>(numPoints);
-
-}
-
-
-// ---------------------------------------------------------------------------------------
 //                               DBSCAN Class 
 // ---------------------------------------------------------------------------------------
 
-DBSCAN::DBSCAN(std::vector<Point>& points, double eps, int minPoints): points(points), eps(eps), eps2(eps*eps), minPoints(minPoints) {}
+DBSCAN::DBSCAN(std::vector<Point>& points, double eps, int minPoints): eps(eps), eps2(eps*eps), minPoints(minPoints), points(points) {}
 
 void DBSCAN::pointNeighbours(Point& point_to_check) {
 
@@ -69,7 +35,7 @@ void DBSCAN::clusteringAlgorithm() {
 
         if(static_cast<int>(point.neighbours.size()) >= minPoints) {
             
-            point.class_ = point_ns::Core;
+            point.class_ = point::classes::Core;
 
             Cluster cluster_aux;
             cluster_aux.points.push_back(&point);
@@ -90,16 +56,16 @@ void DBSCAN::clusteringAlgorithm() {
 
                     if(static_cast<int>(curr_point->neighbours.size()) >= minPoints) {
 
-                        curr_point->class_ = point_ns::Core;
+                        curr_point->class_ = point::classes::Core;
                         members.insert(members.end(), curr_point->neighbours.begin(), curr_point->neighbours.end());
 
                     }
 
-                    else curr_point->class_ = point_ns::Border;
+                    else curr_point->class_ = point::classes::Border;
 
                 }
 
-                if(initial_class == point_ns::Unassigned || initial_class == point_ns::Noise) {
+                if(initial_class == point::classes::Unassigned || initial_class == point::classes::Noise) {
 
                     cluster_aux.points.push_back(curr_point);
 
@@ -112,7 +78,7 @@ void DBSCAN::clusteringAlgorithm() {
 
         }
 
-        else point.class_ = point_ns::Noise;
+        else point.class_ = point::classes::Noise;
 
     }
 

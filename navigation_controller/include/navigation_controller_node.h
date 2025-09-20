@@ -100,7 +100,6 @@ class NavigationController {
 
 };
 
-
 namespace navigation {
 
     namespace states {

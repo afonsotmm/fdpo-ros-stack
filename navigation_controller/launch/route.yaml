@@ -3,3 +3,22 @@ waypoints:
   - { id: 1, x: 0.0, y: 0.45, yaw: 1.57, align: false, backwards: false}
   - { id: 2, x: 0.0, y: -0.45, yaw: 1.57, align: false, backwards: true}
   - { id: 3, x: -0.70, y: -0.45, yaw: 1.57, align: true, backwards: false}
+
+# # Ronda 1
+# waypoints:
+#   # Partida
+#   - { id: 0,  x:  0.00,  y:  0.00,  yaw: 0.00,   align: false,  backwards: false }
+
+#   # ====================== Caixa 1 (linha de cima, y=+0.40) ======================
+#   - { id: 0,  x:  0.00,  y:  0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  -0.70,  y:  0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  -0.70,  y:  0.40,  yaw: 1.57,   align: true,  backwards: false }
+#   - { id: 0,  x:  -0.70,  y:  0.30,  yaw: 0.00,   align: false,  backwards: true }
+#   - { id: 0,  x:  0.00,  y:  0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  0.00,  y:  -0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  0.70,  y:  -0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  0.70,  y:  -0.40,  yaw: -1.57,   align: true,  backwards: false }
+#   - { id: 0,  x:  0.70,  y:  -0.30,  yaw: 0.00,   align: false,  backwards: true }
+#   - { id: 0,  x:  0.00,  y:  -0.30,  yaw: 0.00,   align: false,  backwards: false }
+#   - { id: 0,  x:  0.00,  y:  0.0,  yaw: 0.00,   align: false,  backwards: false }
+

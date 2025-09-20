@@ -14,7 +14,19 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs       
   visualization_msgs
   geometry_msgs             
-  xmlrpcpp                 
+  xmlrpcpp    
+  message_generation             
+)
+
+add_message_files(
+  FILES
+    Pose.msg
+    Cluster.msg
+    BeaconMatch.msg
+)
+
+generate_messages(
+  DEPENDENCIES std_msgs geometry_msgs
 )
 
 catkin_package(
@@ -27,7 +39,8 @@ catkin_package(
     tf2_geometry_msgs      
     visualization_msgs
     geometry_msgs          
-    xmlrpcpp                
+    xmlrpcpp       
+    message_runtime         
 )
 
 include_directories(
@@ -39,6 +52,8 @@ add_executable(beacon_detector_node
   src/main.cpp
   src/beacon_detector_node.cpp
   src/dbscan.cpp
+  src/cluster.cpp
+  src/point.cpp
 )
 
 add_dependencies(beacon_detector_node ${catkin_EXPORTED_TARGETS})
