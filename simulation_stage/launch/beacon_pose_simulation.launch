@@ -17,6 +17,8 @@
       <node pkg="beacon_detector" type="beacon_detector_node" name="beacon_detector_node">
       	     <rosparam file="$(find beacon_detector)/launch/beacons_info.yaml" command="load"/>
       </node>
+      
+      <node pkg="localizer" type="localizer_node" name="localizer_node" output="screen"/>
 
 	<!-- Hack temporário: map = odom -->
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_identity" args="0 0 0  0 0 0  map odom 100"/>
