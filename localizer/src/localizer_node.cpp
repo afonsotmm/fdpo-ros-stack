@@ -2,7 +2,7 @@
 
 LocalizerNode::LocalizerNode(ros::NodeHandle& nh) {
 
-    sub_ = nh.subscribe("/beacon_stimation", 10, &LocalizerNode::callback, this);
+    sub_ = nh.subscribe("/beacon_stimation", 10, &LocalizerNode::echoCallback, this);
 
 }
 
