@@ -12,6 +12,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     target_frame = "base_link";
 
     nh.param("max_match_dist", maxMatchDist, 0.2);
+    nh.param("centroid_offset", centroidOffset, 0.045/2);
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
 
@@ -66,7 +67,14 @@ void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
 
     clustersCentroids_robotFrame.clear();
 
-    for(const auto& cluster: dbscan.clusters) {
+    for(auto& cluster: dbscan.clusters) {
+
+        const double r = std::hypot(cluster.centroid.x, cluster.centroid.y); 
+
+        if (centroidOffset != 0.0 && r > 1e-6) {
+            cluster.centroid.x += centroidOffset * (cluster.centroid.x / r);
+            cluster.centroid.y += centroidOffset * (cluster.centroid.y / r);
+        }
 
         clusters.push_back(cluster);
         clustersCentroids_robotFrame.push_back(cluster.centroid);
@@ -195,12 +203,18 @@ void BeaconDetector::matchBeaconsToClusters() {
 
 void BeaconDetector::publishBeaconsStimation() {
 
+    if(beaconToCluster.empty()) return;
+
     beacon_detector::BeaconMatch beacons_aux;
 
     for(const auto& beacon: beacons_robotFrame) {
 
         Cluster cluster_aux;
-        int cluster_index = beaconToCluster[beacon.name];
+
+        auto it = beaconToCluster.find(beacon.name);
+        if (it == beaconToCluster.end()) continue;   // no match -> end cycle          
+        int cluster_index = it->second; 
+
         cluster_aux = clusters[cluster_index];
         int numPoints = static_cast<int>(cluster_aux.points.size());
 
@@ -213,8 +227,8 @@ void BeaconDetector::publishBeaconsStimation() {
         for(int point_id = 0; point_id < numPoints; ++point_id) {
 
             beacon_detector::Pose point_aux; 
-            point_aux.x = cluster_aux.points[point_id]->pose.x;
-            point_aux.y = cluster_aux.points[point_id]->pose.y;
+            point_aux.x = cluster_aux.points[point_id].x;
+            point_aux.y = cluster_aux.points[point_id].y;
 
             cluster_msg.points.push_back(point_aux);
 
@@ -306,9 +320,9 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     pts.lifetime = ros::Duration(0.2);
 
     pts.points.reserve(cl.points.size());
-    for (auto* p : cl.points) {
+    for (auto& p : cl.points) {
       geometry_msgs::Point gp;
-      gp.x = p->pose.x; gp.y = p->pose.y; gp.z = 0.0;
+      gp.x = p.x; gp.y = p.y; gp.z = 0.0;
       pts.points.push_back(gp);
     }
     arr.markers.push_back(pts);

@@ -14,10 +14,10 @@ void Cluster::computeCentroid() {
     double sum_x = 0.0, sum_y = 0.0;
     std::size_t numPoints = points.size();
 
-    for(auto* point: points) {
+    for(auto& point: points) {
 
-        sum_x += point->pose.x;
-        sum_y += point->pose.y; 
+        sum_x += point.x;
+        sum_y += point.y; 
 
     }
 

@@ -53,6 +53,7 @@ class BeaconDetector {
         std::unordered_map<std::string, int> beaconToCluster; // beacon_name -> cluster_index 
 
         double maxMatchDist;
+        double centroidOffset;
         void loadBeaconsFromParams();
         void updateRobotFrameBeacons(const ros::Time& stamp);
         void matchBeaconsToClusters();

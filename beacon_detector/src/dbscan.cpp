@@ -38,7 +38,7 @@ void DBSCAN::clusteringAlgorithm() {
             point.class_ = point::classes::Core;
 
             Cluster cluster_aux;
-            cluster_aux.points.push_back(&point);
+            cluster_aux.points.push_back(point.pose);
 
             std::deque<Point*> members(point.neighbours.begin(), point.neighbours.end());
             
@@ -67,7 +67,7 @@ void DBSCAN::clusteringAlgorithm() {
 
                 if(initial_class == point::classes::Unassigned || initial_class == point::classes::Noise) {
 
-                    cluster_aux.points.push_back(curr_point);
+                    cluster_aux.points.push_back(curr_point->pose);
 
                 }
 

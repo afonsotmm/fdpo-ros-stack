@@ -8,7 +8,7 @@
 class Cluster {
 
     public:
-        std::vector<Point*> points;
+        std::vector<Pose> points;
         Pose centroid;
 
         Cluster();
