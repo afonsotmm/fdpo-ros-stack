@@ -6,14 +6,15 @@ LocalizerNode::LocalizerNode(ros::NodeHandle& nh) {
 
 }
 
+// Just prints the received cluster-beacon match message
 void LocalizerNode::echoCallback(const beacon_detector::BeaconMatch::ConstPtr& msg) {
 
-    const auto& clusters = msg->clusters;
+    const std::vector<beacon_detector::Cluster>& clusters = msg->clusters;
     ROS_INFO("BeaconMatch: %zu clusters recebidos", clusters.size());
 
     for (size_t i = 0; i < clusters.size(); ++i) {
 
-        const auto& c = clusters[i];
+        beacon_detector::Cluster c = clusters[i];
 
         ROS_INFO("  [%zu] name='%s'  num_points=%u  centroid=(%.3f, %.3f)",
                 i,
@@ -24,7 +25,7 @@ void LocalizerNode::echoCallback(const beacon_detector::BeaconMatch::ConstPtr& m
 
         for (size_t j = 0; j < c.points.size(); ++j) {
 
-            const auto& p = c.points[j];
+            beacon_detector::Pose p = c.points[j];
             ROS_INFO("       pt[%zu] = (%.3f, %.3f)", j, p.x, p.y);
         
         }
