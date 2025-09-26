@@ -57,8 +57,8 @@ class NavigationController {
         
         struct Parameters {
 
-            double v_nom, w_nom;
-            double k_p;          
+            double v_nom, w_nom, w_min;
+            double kp_linear, kp_angular;          
             double arrive_radius, yaw_tol;
             int loop_rate_hz;
 

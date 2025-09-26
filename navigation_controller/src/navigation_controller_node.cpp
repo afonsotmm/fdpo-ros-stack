@@ -8,7 +8,9 @@ navigationFsm(navigation::states::idle), tfBuffer(), tfListener(tfBuffer) {
     // load navigation parameters
     nh.param("v_nom", param.v_nom, 0.4);
     nh.param("w_nom", param.w_nom, 1.2);
-    nh.param("k_p", param.k_p, 5.0);
+    nh.param("w_min", param.w_min, 0.1);
+    nh.param("kp_linear", param.kp_linear, 5.0);
+    nh.param("kp_angular", param.kp_angular, 5.0);
     nh.param("arrive_radius",  param.arrive_radius, 0.05);
     nh.param("yaw_tol",param.yaw_tol, 0.08);
     nh.param("loop_rate_hz", param.loop_rate_hz, 30);
@@ -170,6 +172,7 @@ void NavigationController::hardStop() {
 void NavigationController::setTheta() {
 
     v_d = 0.0;
+    //double kp_angular = 2.0/M_PI * param.w_nom;
 
     double yaw_error = normalizeAngle(poseDesired.theta - poseCurr.theta); 
     if(std::fabs(yaw_error) <= param.yaw_tol) {
@@ -179,10 +182,11 @@ void NavigationController::setTheta() {
         return;
     }
 
-    w_d = param.w_nom * yaw_error * 2 / M_PI;
+    w_d = param.kp_angular * yaw_error;
 
     if(w_d > param.w_nom) w_d = param.w_nom;
     else if(w_d < -param.w_nom) w_d = -param.w_nom;
+    if (std::fabs(w_d) < param.w_min) w_d = std::copysign(param.w_min, yaw_error);
 
 }
 
@@ -194,6 +198,8 @@ void NavigationController::goToXY() {
     double theta_virtual = poseCurr.theta + (back ? M_PI : 0.0);
     double yaw_error = normalizeAngle(theta_d - theta_virtual); 
 
+    //double kp_angular = 8.0/M_PI * param.w_nom;
+    
     if(position_error <= param.arrive_radius) {
 
         v_d = 0.0;
@@ -203,14 +209,14 @@ void NavigationController::goToXY() {
     }
 
     // angular
-    w_d = param.w_nom * yaw_error * 8.0 / M_PI;
+    w_d = param.kp_angular * yaw_error;
 
     if(w_d > param.w_nom) w_d = param.w_nom;
     else if(w_d < -param.w_nom) w_d = -param.w_nom;
 
     // linear
     double v_mag = 0.0;
-    if(std::fabs(yaw_error) <= M_PI/8.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.k_p * position_error);
+    if(std::fabs(yaw_error) <= M_PI/8.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.kp_linear * position_error);
 
     v_d = back ? -v_mag : v_mag;
 
