@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   geometry_msgs             
   xmlrpcpp    
+  std_msgs 
   message_generation             
 )
 
@@ -56,7 +57,9 @@ add_executable(beacon_detector_node
   src/point.cpp
 )
 
-add_dependencies(beacon_detector_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(beacon_detector_node 
+${${PROJECT_NAME}_EXPORTED_TARGETS} 
+${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(beacon_detector_node
   ${catkin_LIBRARIES}

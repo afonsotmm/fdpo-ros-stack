@@ -68,8 +68,8 @@ class BeaconDetector {
         void pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out);
         void dataClustering(std::vector<Point>& dataPoints);
 
-        ros::Publisher beaconStimation_pub;
-        void publishBeaconsStimation();
+        ros::Publisher beaconEstimation_pub;
+        void publishBeaconsEstimation(const std_msgs::Header& header);
 
         ros::Publisher markers_pub_;
         void publishClusters(const std::vector<Cluster>& clusters);

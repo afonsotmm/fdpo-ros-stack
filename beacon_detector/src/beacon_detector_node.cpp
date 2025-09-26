@@ -16,7 +16,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
 
-    beaconStimation_pub = nh.advertise<beacon_detector::BeaconMatch>("beacon_stimation", 1);
+    beaconEstimation_pub = nh.advertise<beacon_detector::BeaconMatch>("beacon_Estimation", 1);
 
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
     beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
@@ -201,11 +201,14 @@ void BeaconDetector::matchBeaconsToClusters() {
 
 }
 
-void BeaconDetector::publishBeaconsStimation() {
+void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
 
     if(beaconToCluster.empty()) return;
 
     beacon_detector::BeaconMatch beacons_aux;
+
+    beacons_aux.header = header;          
+    beacons_aux.header.frame_id = target_frame; 
 
     for(const auto& beacon: beacons_robotFrame) {
 
@@ -238,7 +241,7 @@ void BeaconDetector::publishBeaconsStimation() {
 
     }
 
-    beaconStimation_pub.publish(beacons_aux);
+    beaconEstimation_pub.publish(beacons_aux);
 
 }
 
@@ -265,7 +268,7 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     dataClustering(dataPoints);
     updateRobotFrameBeacons(scan->header.stamp);
     matchBeaconsToClusters();
-    publishBeaconsStimation();
+    publishBeaconsEstimation(scan->header);
 
     #ifdef RVIZ_VISUALIZATION
     publishBeaconAssociations();
@@ -338,7 +341,7 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     centroid.pose.position.y = cl.centroid.y;
     centroid.pose.position.z = 0.0;
     centroid.pose.orientation.w = 1.0;
-    centroid.scale.x = centroid.scale.y = centroid.scale.z = 0.12;
+    centroid.scale.x = centroid.scale.y = centroid.scale.z = 0.08;
     centroid.color.r = 1.0; centroid.color.g = 1.0; centroid.color.b = 1.0; centroid.color.a = 1.0;
     centroid.lifetime = ros::Duration(0.2);
     arr.markers.push_back(centroid);
@@ -385,7 +388,7 @@ void BeaconDetector::publishBeaconAssociations() {
         m.pose.position.y = b.pose.y;
         m.pose.position.z = 0.0;
         m.pose.orientation.w = 1.0;
-        m.scale.x = m.scale.y = m.scale.z = 0.10;   // tamanho da esfera
+        m.scale.x = m.scale.y = m.scale.z = 0.075;   // tamanho da esfera
         m.color.r = 1.0; m.color.g = 0.85; m.color.b = 0.10; m.color.a = 1.0; // “dourado”
         m.lifetime = ros::Duration(0.2);
         arr.markers.push_back(m);
@@ -475,7 +478,7 @@ void BeaconDetector::publishBeaconsInMap() {
     m.pose.position.x = b.pose.x;
     m.pose.position.y = b.pose.y;
     m.pose.position.z = 0.0;
-    m.scale.x = m.scale.y = m.scale.z = 0.15;           // tamanho da esfera
+    m.scale.x = m.scale.y = m.scale.z = 0.0075;           // tamanho da esfera
     m.color.r = 0.10; m.color.g = 0.85; m.color.b = 1.0; // ciano para distinguir dos “dourados”
     m.color.a = 1.0;
     m.lifetime = ros::Duration(0.0); // infinito
@@ -486,7 +489,7 @@ void BeaconDetector::publishBeaconsInMap() {
     label.ns   = "beacons_map_label";
     label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
     label.pose.position.z = 0.25;
-    label.scale.z = 0.18;
+    label.scale.z = 0.05;
     label.color.r = 1.0; label.color.g = 1.0; label.color.b = 1.0;
     label.text = b.name;
     arr.markers.push_back(label);
