@@ -17,6 +17,10 @@
 #include <string>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <dynamic_reconfigure/server.h>
+#include <navigation_controller/NavigationConfig.h>  
+#include <boost/bind.hpp>                            
+
 
 #include "fsm.h"
 
@@ -40,6 +44,7 @@ class NavigationController {
 
     public:
         NavigationController(ros::NodeHandle& nh_);
+        void reconfigCb(navigation_controller::NavigationConfig &cfg, uint32_t level);
 
     private:
         ros::NodeHandle& nh;
@@ -64,8 +69,10 @@ class NavigationController {
 
         };
 
+        dynamic_reconfigure::Server<navigation_controller::NavigationConfig> dr_srv_;
         Parameters param;
         void loadNavigationParameters();
+        void loadNavigationParams();
 
         double normalizeAngle(double theta);
 

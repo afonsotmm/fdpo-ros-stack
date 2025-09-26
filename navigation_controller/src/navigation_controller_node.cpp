@@ -3,17 +3,10 @@
 NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), 
 navigationFsm(navigation::states::idle), tfBuffer(), tfListener(tfBuffer) {
     
-    mode = "stop";
+    mode = "idle";
 
     // load navigation parameters
-    nh.param("v_nom", param.v_nom, 0.4);
-    nh.param("w_nom", param.w_nom, 1.2);
-    nh.param("w_min", param.w_min, 0.1);
-    nh.param("kp_linear", param.kp_linear, 5.0);
-    nh.param("kp_angular", param.kp_angular, 5.0);
-    nh.param("arrive_radius",  param.arrive_radius, 0.05);
-    nh.param("yaw_tol",param.yaw_tol, 0.08);
-    nh.param("loop_rate_hz", param.loop_rate_hz, 30);
+    loadNavigationParams();
     
     //load RViz parameters
     nh.param("rviz_append", rvizGoalAppend, false);
@@ -25,8 +18,33 @@ navigationFsm(navigation::states::idle), tfBuffer(), tfListener(tfBuffer) {
     controlTimer = nh.createTimer(ros::Duration(1.0 / std::max(1, param.loop_rate_hz)), &NavigationController::navigationFsmRunner, this);
     controlSrv = nh.advertiseService("control", &NavigationController::controlSrvCb, this);
 
+    dynamic_reconfigure::Server<navigation_controller::NavigationConfig>::CallbackType cb;
+    cb = boost::bind(&NavigationController::reconfigCb, this, _1, _2);
+    dr_srv_.setCallback(cb);
+
     ROS_INFO("NavigationController instace created");
 }
+
+void NavigationController::reconfigCb(navigation_controller::NavigationConfig &cfg, uint32_t) {
+    param.v_nom        = cfg.v_nom;
+    param.w_nom        = cfg.w_nom;
+    param.w_min        = cfg.w_min;
+    param.kp_linear    = cfg.kp_linear;
+    param.kp_angular   = cfg.kp_angular;
+    param.arrive_radius= cfg.arrive_radius;
+    param.yaw_tol      = cfg.yaw_tol;
+
+    // Só atualiza a taxa se mudares (evita recriar timer em loop)
+    if (param.loop_rate_hz != cfg.loop_rate_hz) {
+        param.loop_rate_hz = cfg.loop_rate_hz;
+        controlTimer.stop();
+        controlTimer = nh.createTimer(
+            ros::Duration(1.0 / std::max(1, param.loop_rate_hz)),
+            &NavigationController::navigationFsmRunner, this
+        );
+    }
+}
+
 
 bool NavigationController::desiredPoseFromMapToOdom() {
 
@@ -93,6 +111,19 @@ void NavigationController::loadRouteFromParameters(){
     }
 
     updateDesiredPose();
+
+}
+
+void NavigationController::loadNavigationParams() {
+
+    nh.param("v_nom", param.v_nom, 0.4);
+    nh.param("w_nom", param.w_nom, 1.2);
+    nh.param("w_min", param.w_min, 0.1);
+    nh.param("kp_linear", param.kp_linear, 5.0);
+    nh.param("kp_angular", param.kp_angular, 2.0/M_PI * param.w_nom);
+    nh.param("arrive_radius",  param.arrive_radius, 0.05);
+    nh.param("yaw_tol",param.yaw_tol, 0.08);
+    nh.param("loop_rate_hz", param.loop_rate_hz, 30);
 
 }
 
@@ -172,7 +203,6 @@ void NavigationController::hardStop() {
 void NavigationController::setTheta() {
 
     v_d = 0.0;
-    //double kp_angular = 2.0/M_PI * param.w_nom;
 
     double yaw_error = normalizeAngle(poseDesired.theta - poseCurr.theta); 
     if(std::fabs(yaw_error) <= param.yaw_tol) {
@@ -186,7 +216,6 @@ void NavigationController::setTheta() {
 
     if(w_d > param.w_nom) w_d = param.w_nom;
     else if(w_d < -param.w_nom) w_d = -param.w_nom;
-    if (std::fabs(w_d) < param.w_min) w_d = std::copysign(param.w_min, yaw_error);
 
 }
 
@@ -198,8 +227,6 @@ void NavigationController::goToXY() {
     double theta_virtual = poseCurr.theta + (back ? M_PI : 0.0);
     double yaw_error = normalizeAngle(theta_d - theta_virtual); 
 
-    //double kp_angular = 8.0/M_PI * param.w_nom;
-    
     if(position_error <= param.arrive_radius) {
 
         v_d = 0.0;
@@ -217,6 +244,7 @@ void NavigationController::goToXY() {
     // linear
     double v_mag = 0.0;
     if(std::fabs(yaw_error) <= M_PI/8.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.kp_linear * position_error);
+    if(std::fabs(yaw_error) <= 0.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.kp_linear * position_error);
 
     v_d = back ? -v_mag : v_mag;
 
@@ -226,8 +254,9 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     // Update's
     navigationFsm.update_tis();
-    bool enable = (mode == "start" || mode == "unpause") && !route.empty();
+    bool enable = (mode == "start" || mode == "unpause" || mode == "idle") && !route.empty();
     if (!route.empty()) desiredPoseFromMapToOdom();
+    loadNavigationParams();
 
     // Compute Transitions
     if(navigationFsm.state == navigation::states::idle && enable) {
@@ -335,6 +364,7 @@ bool NavigationController::controlSrvCb(navigation_controller::NavigationControl
         return true;
 
     }
-
+    
+    return false;
 
 }
