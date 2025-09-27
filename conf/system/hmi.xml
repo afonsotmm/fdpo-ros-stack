@@ -1,0 +1,15 @@
+<launch>
+
+    <arg name="map_file" default="$(find conf)/launch/hmi/maps/factory_map.yaml"/>
+
+    <include file="$(find conf)/launch/hmi/fdpo_map_server.launch">
+        <arg name="map_file" value="$(arg map_file)"/>
+    </include>
+
+    <include file="$(find conf)/launch/hmi/fdpo_path_viewer.launch"/>
+
+    <include file="$(find conf)/launch/hmi/fdpo_reconfigure_rqt.launch"/>
+
+    <include file="$(find conf)/launch/hmi/fdpo_rviz.launch"/>
+
+</launch>

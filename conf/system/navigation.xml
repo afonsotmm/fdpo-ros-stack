@@ -1,0 +1,9 @@
+<launch>
+
+  <include file="$(find conf)/launch/navigation/navigation_controller/run_navigation_controller.launch"/>
+  
+  <include file="$(find conf)/launch/navigation/localizer/beacon_detector/run_beacon_detector.launch"/>
+
+  <include file="$(find conf)/launch/navigation/localizer/ekf_localizer/run_ekf_localizer.launch"/>
+
+</launch>

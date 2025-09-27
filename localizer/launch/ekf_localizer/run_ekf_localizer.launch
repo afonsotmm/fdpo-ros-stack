@@ -1,3 +1,5 @@
 <launch>
-  <node name="localizer_node" pkg="localizer" type="localizer_node" output="screen"/>
+
+  <include file="$(find conf)/launch/navigation/localizer/ekf_localizer/run_ekf_localizer.launch"/>
+  
 </launch>

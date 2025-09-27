@@ -1,0 +1,22 @@
+<launch>
+
+  <arg name="conf_root" default="$(find conf)"/>
+  <arg name="world_file" default="$(find simulation_stage)/worlds/factory_floor.world"/>
+  <arg name="map_file" default="$(find conf)/launch/hmi/maps/factory_map.yaml"/>
+
+  <arg name="use_conf_navigation" default="true"/>
+  <arg name="use_conf_hmi"        default="true"/>
+
+  <param name="/use_sim_time" value="true"/>
+
+  <node pkg="stage_ros" type="stageros" name="stage" args="$(arg world_file)"/>
+
+  <include if="$(arg use_conf_navigation)" file="$(arg conf_root)/system/navigation.xml"/>
+
+  <include if="$(arg use_conf_hmi)" file="$(arg conf_root)/system/hmi.xml">
+      <arg name="map_file" value="$(arg map_file)"/>
+  </include>
+
+</launch>
+
+

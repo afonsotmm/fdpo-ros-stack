@@ -1,0 +1,5 @@
+<launch>
+
+  <include file="$(find conf)/launch/hardware/hlds_laser.launch"/>
+  
+</launch>

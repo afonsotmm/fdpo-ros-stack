@@ -1,0 +1,13 @@
+<launch>
+
+    <arg name="serial_port" default="/dev/ttyUSB0"/>
+    <arg name="baud_rate"  default="230400"/>
+    <arg name="frame_id"   default="laser"/>
+
+    <node pkg="hls_lfcd_lds_driver" type="hlds_laser_publisher" name="hlds_laser" output="screen">
+        <param name="port"      value="$(arg serial_port)"/>
+        <param name="baud_rate" value="$(arg baud_rate)"/>
+        <param name="frame_id"  value="$(arg frame_id)"/>
+    </node>
+    
+</launch>

@@ -1,10 +1,5 @@
 <launch>
 
-    <node pkg="navigation_controller" type="navigation_controller_node" name="navigation_controller_node">
-
-        <rosparam file="$(find navigation_controller)/launch/route.yaml" command="load"/>
-        <rosparam file="$(find navigation_controller)/launch/navigation_parameters.yaml" command="load"/>
-        
-    </node>
+    <include file="$(find conf)/launch/navigation/navigation_controller/beacon_detector/run_navigation_controller.launch"/>
 
 </launch>

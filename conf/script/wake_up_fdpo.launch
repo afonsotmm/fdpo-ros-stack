@@ -1,0 +1,9 @@
+<launch>
+
+	<include file="$(dirname)/../system/hal.xml"/>
+
+	<include file="$(dirname)/../system/navigation.xml"/>
+    
+	<include file="$(dirname)/../system/hmi.xml"/>
+
+</launch>

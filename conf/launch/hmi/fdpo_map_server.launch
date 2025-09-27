@@ -1,0 +1,7 @@
+<launch>
+
+    <arg name="map_file" default="$(find conf)/launch/hmi/maps/factory_map.yaml"/>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"/>
+
+</launch>
