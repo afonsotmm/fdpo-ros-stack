@@ -1,5 +1,5 @@
 <launch>
 
-    <include file="$(find conf)/launch/navigation/navigation_controller/beacon_detector/run_navigation_controller.launch"/>
+    <include file="$(find conf)/launch/navigation/navigation_controller/run_navigation_controller.launch"/>
 
 </launch>
