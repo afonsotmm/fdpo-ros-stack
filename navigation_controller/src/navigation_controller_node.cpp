@@ -34,7 +34,6 @@ void NavigationController::reconfigCb(navigation_controller::NavigationConfig &c
     param.arrive_radius= cfg.arrive_radius;
     param.yaw_tol      = cfg.yaw_tol;
 
-    // Só atualiza a taxa se mudares (evita recriar timer em loop)
     if (param.loop_rate_hz != cfg.loop_rate_hz) {
         param.loop_rate_hz = cfg.loop_rate_hz;
         controlTimer.stop();
@@ -45,6 +44,43 @@ void NavigationController::reconfigCb(navigation_controller::NavigationConfig &c
     }
 }
 
+void NavigationController::loadRouteFromParameters(){
+
+    XmlRpc::XmlRpcValue waypoints;
+    if(!nh.getParam("waypoints", waypoints)) return;
+
+    route.clear();
+
+    for(int i = 0; i < static_cast<int>(waypoints.size()); ++i){
+        WayPoint waypoint_temp;
+
+        waypoint_temp.pose.x = static_cast<double>(waypoints[i]["x"]);
+        waypoint_temp.pose.y = static_cast<double>(waypoints[i]["y"]);
+        waypoint_temp.pose.theta = static_cast<double>(waypoints[i]["yaw"]);
+        waypoint_temp.align = static_cast<bool>(waypoints[i]["align"]);
+        waypoint_temp.backwards = static_cast<bool>(waypoints[i]["backwards"]);
+        ROS_INFO("Waypoint: x=%.2f y=%.2f yaw=%.2f", waypoint_temp.pose.x, waypoint_temp.pose.y, waypoint_temp.pose.theta);
+
+        route.push_back(waypoint_temp);
+
+    }
+
+    updateDesiredPose();
+
+}
+
+void NavigationController::loadNavigationParams() {
+
+    nh.param("v_nom", param.v_nom, 0.4);
+    nh.param("w_nom", param.w_nom, 1.2);
+    nh.param("w_min", param.w_min, 0.1);
+    nh.param("kp_linear", param.kp_linear, 5.0);
+    nh.param("kp_angular", param.kp_angular, 2.0/M_PI * param.w_nom);
+    nh.param("arrive_radius",  param.arrive_radius, 0.05);
+    nh.param("yaw_tol",param.yaw_tol, 0.08);
+    nh.param("loop_rate_hz", param.loop_rate_hz, 30);
+
+}
 
 bool NavigationController::desiredPoseFromMapToOdom() {
 
@@ -89,56 +125,54 @@ void NavigationController::updateDesiredPose() {
 
 }
 
-void NavigationController::loadRouteFromParameters(){
+bool NavigationController::isBackwards() {
 
-    XmlRpc::XmlRpcValue waypoints;
-    if(!nh.getParam("waypoints", waypoints)) return;
-
-    route.clear();
-
-    for(int i = 0; i < static_cast<int>(waypoints.size()); ++i){
-        WayPoint waypoint_temp;
-
-        waypoint_temp.pose.x = static_cast<double>(waypoints[i]["x"]);
-        waypoint_temp.pose.y = static_cast<double>(waypoints[i]["y"]);
-        waypoint_temp.pose.theta = static_cast<double>(waypoints[i]["yaw"]);
-        waypoint_temp.align = static_cast<bool>(waypoints[i]["align"]);
-        waypoint_temp.backwards = static_cast<bool>(waypoints[i]["backwards"]);
-        ROS_INFO("Waypoint: x=%.2f y=%.2f yaw=%.2f", waypoint_temp.pose.x, waypoint_temp.pose.y, waypoint_temp.pose.theta);
-
-        route.push_back(waypoint_temp);
-
-    }
-
-    updateDesiredPose();
+    return !route.empty() ? route.front().backwards : false;
 
 }
 
-void NavigationController::loadNavigationParams() {
+double NavigationController::getAlignYawError() {
 
-    nh.param("v_nom", param.v_nom, 0.4);
-    nh.param("w_nom", param.w_nom, 1.2);
-    nh.param("w_min", param.w_min, 0.1);
-    nh.param("kp_linear", param.kp_linear, 5.0);
-    nh.param("kp_angular", param.kp_angular, 2.0/M_PI * param.w_nom);
-    nh.param("arrive_radius",  param.arrive_radius, 0.05);
-    nh.param("yaw_tol",param.yaw_tol, 0.08);
-    nh.param("loop_rate_hz", param.loop_rate_hz, 30);
+    double theta_d = std::atan2(poseDesired.y - poseCurr.y, poseDesired.x - poseCurr.x);
+    double theta_virtual = poseCurr.theta + (isBackwards() ? M_PI : 0.0);
+
+    return normalizeAngle(theta_d - theta_virtual); 
 
 }
 
-bool NavigationController::checkPositionArrived() {
+bool NavigationController::checkAlignYaw() {
+
+    double yaw_error = getAlignYawError();
+
+    if(std::fabs(yaw_error) <= param.yaw_tol) return true;
+    return false;
+
+}
+
+double NavigationController::getPositionError() {
+
+    return std::hypot(poseDesired.x - poseCurr.x, poseDesired.y - poseCurr.y);
+
+}
+
+bool NavigationController::isPositionArrived() {
     
-    double position_error = std::hypot(poseDesired.x - poseCurr.x, poseDesired.y - poseCurr.y);
+    double position_error = getPositionError();
 
     if(position_error <= param.arrive_radius) return true;
     return false;
 
 }
 
-bool NavigationController::checkYawArrived() {
+double NavigationController::getDesiredYawError() {
 
-    double yaw_error = normalizeAngle(poseDesired.theta - poseCurr.theta); 
+    return normalizeAngle(poseDesired.theta - poseCurr.theta); 
+
+}
+
+bool NavigationController::isYawDesired() {
+
+    double yaw_error = getDesiredYawError();
 
     if(std::fabs(yaw_error) <= param.yaw_tol) return true;
     return false;
@@ -204,7 +238,7 @@ void NavigationController::setTheta() {
 
     v_d = 0.0;
 
-    double yaw_error = normalizeAngle(poseDesired.theta - poseCurr.theta); 
+    double yaw_error = getDesiredYawError(); 
     if(std::fabs(yaw_error) <= param.yaw_tol) {
 
         w_d = 0.0;
@@ -221,11 +255,8 @@ void NavigationController::setTheta() {
 
 void NavigationController::goToXY() {
 
-    double position_error = std::hypot(poseDesired.x - poseCurr.x, poseDesired.y - poseCurr.y);
-    double theta_d = std::atan2(poseDesired.y - poseCurr.y, poseDesired.x - poseCurr.x);
-    bool back = !route.empty() ? route.front().backwards : false;
-    double theta_virtual = poseCurr.theta + (back ? M_PI : 0.0);
-    double yaw_error = normalizeAngle(theta_d - theta_virtual); 
+    double position_error = getPositionError();
+    double yaw_error = getAlignYawError(); 
 
     if(position_error <= param.arrive_radius) {
 
@@ -246,7 +277,7 @@ void NavigationController::goToXY() {
     if(std::fabs(yaw_error) <= M_PI/8.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.kp_linear * position_error);
     if(std::fabs(yaw_error) <= 0.0) v_mag = param.v_nom * std::cos(yaw_error) * std::min<double>(1.0, param.kp_linear * position_error);
 
-    v_d = back ? -v_mag : v_mag;
+    v_d = isBackwards() ? -v_mag : v_mag;
 
 }
 
@@ -254,9 +285,8 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     // Update's
     navigationFsm.update_tis();
-    bool enable = (mode == "start" || mode == "unpause" || mode == "idle") && !route.empty();
+    bool enable = !(mode == "stop" || mode == "pause") && !route.empty();
     if (!route.empty()) desiredPoseFromMapToOdom();
-    loadNavigationParams();
 
     // Compute Transitions
     if(navigationFsm.state == navigation::states::idle && enable) {
@@ -265,13 +295,13 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     }
 
-    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && route.front().align && enable) {
+    else if(navigationFsm.state == navigation::states::driveToGoal && isPositionArrived() && route.front().align && enable) {
 
         navigationFsm.new_state = navigation::states::turnToFinalYaw;
 
     }
 
-    else if(navigationFsm.state == navigation::states::driveToGoal && checkPositionArrived() && !route.front().align && enable) {
+    else if(navigationFsm.state == navigation::states::driveToGoal && isPositionArrived() && !route.front().align && enable) {
 
         route.pop_front();
         updateDesiredPose();
@@ -280,7 +310,13 @@ void NavigationController::navigationFsmRunner(const ros::TimerEvent&) {
 
     }
 
-    else if(navigationFsm.state == navigation::states::turnToFinalYaw && checkYawArrived() && enable) {
+    else if (navigationFsm.state == navigation::states::turnToFinalYaw && enable && !isPositionArrived()) {
+
+        navigationFsm.new_state = navigation::states::driveToGoal;
+
+    }
+
+    else if(navigationFsm.state == navigation::states::turnToFinalYaw && isYawDesired() && enable) {
 
         route.pop_front();
         updateDesiredPose();

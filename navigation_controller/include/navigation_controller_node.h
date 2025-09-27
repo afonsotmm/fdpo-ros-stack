@@ -76,8 +76,17 @@ class NavigationController {
 
         double normalizeAngle(double theta);
 
-        bool checkPositionArrived();
-        bool checkYawArrived();
+        // Check if is suppose to move backwards
+        bool isBackwards();
+        // Align to reach the desired position
+        double getAlignYawError();
+        bool checkAlignYaw();
+        // Go to desired position
+        double getPositionError();
+        bool isPositionArrived();
+        // Align to the desired theta
+        double getDesiredYawError();
+        bool isYawDesired();
 
         void hardStop();
         void setTheta();

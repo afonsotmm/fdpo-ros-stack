@@ -22,6 +22,7 @@
             <rosparam file="$(find navigation_controller)/launch/route.yaml" command="load"/>
             <rosparam file="$(find navigation_controller)/launch/navigation_parameters.yaml" command="load"/>
       </node>
+      <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" output="screen"/>
       
       <node pkg="localizer" type="localizer_node" name="localizer_node" output="screen"/>
       

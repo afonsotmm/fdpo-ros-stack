@@ -19,6 +19,8 @@
             <rosparam file="$(find navigation_controller)/launch/navigation_parameters.yaml" command="load"/>
       </node>
 
+	<node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" output="screen"/>
+	
 	<!-- Hack temporário: map = odom -->
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_identity" args="0 0 0  0 0 0  map odom 100"/>
 </launch>
