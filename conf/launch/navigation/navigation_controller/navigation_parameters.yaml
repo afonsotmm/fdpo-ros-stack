@@ -8,4 +8,4 @@ arrive_radius: 0.05
 yaw_tol: 0.015
 
 kp_linear: 5.0            # ~1/lambda (lambda≈0.2)
-kp_angular: 10.0
+kp_angular: 4.0
