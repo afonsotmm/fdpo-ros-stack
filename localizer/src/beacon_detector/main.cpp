@@ -1,4 +1,4 @@
-#include "beacon_detector_node.h"
+#include "beacon_detector/beacon_detector_node.h"
 
 #include <ros/ros.h>
 

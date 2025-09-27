@@ -1,4 +1,4 @@
-#include "localizer_node.h"
+#include "ekf_localizer/localizer_node.h"
 
 LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : tf_buffer(ros::Duration(10.0))  {
 
@@ -90,11 +90,11 @@ void LocalizerNode::ekf_predict(const nav_msgs::Odometry::ConstPtr& msg) {
     publishLogPose();
 }
 
-void LocalizerNode::ekf_update(const beacon_detector::BeaconMatch::ConstPtr& msg) {
+void LocalizerNode::ekf_update(const localizer::BeaconMatch::ConstPtr& msg) {
 
     last_state_stamp_ = msg->header.stamp;
 
-    const std::vector<beacon_detector::Cluster>& clusters = msg->clusters;
+    const std::vector<localizer::Cluster>& clusters = msg->clusters;
     if(clusters.empty()) return;
 
     for(const auto& beacon_measured: clusters) {

@@ -12,23 +12,11 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "beacon_detector/Pose.h"
-#include "beacon_detector/Cluster.h"
-#include "beacon_detector/BeaconMatch.h" 
-
-
-struct Pose {
-
-    double x, y;
-
-};
-
-struct Beacon {
-
-    std::string id;
-    Pose pose;
-
-};
+#include "localizer/Pose.h"
+#include "localizer/Cluster.h"
+#include "localizer/BeaconMatch.h" 
+#include "general/pose.h"
+#include "general/beacon.h"
 
 
 class LocalizerNode {
@@ -53,7 +41,7 @@ class LocalizerNode {
 
         std::unordered_map <std::string, Beacon> beacons;
         ros::Subscriber beacon_sub;
-        void ekf_update(const beacon_detector::BeaconMatch::ConstPtr& msg);
+        void ekf_update(const localizer::BeaconMatch::ConstPtr& msg);
 
         double normalizeAngle(double theta);
 
@@ -67,7 +55,6 @@ class LocalizerNode {
         ros::Publisher pose_pub;
         void publishLogPose();
         
-
 };
 
 

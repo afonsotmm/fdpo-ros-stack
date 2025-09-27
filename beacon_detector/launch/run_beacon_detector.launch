@@ -1,4 +1,0 @@
-<node name="beacon_detector_node" pkg="beacon_detector" type="beacon_detector_node" output="screen">
-  <rosparam file="$(find beacon_detector)/launch/beacons_info.yaml" command="load"/>
-  <rosparam file="$(find beacon_detector)/launch/matching_params.yaml" command="load"/>
-</node>

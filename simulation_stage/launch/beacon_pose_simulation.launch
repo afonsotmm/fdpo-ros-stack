@@ -14,11 +14,12 @@
       <node pkg="rviz" type="rviz" name="rviz" output="screen" required="false"
             args="-d $(arg rviz_config)"/>
 
-      <node pkg="beacon_detector" type="beacon_detector_node" name="beacon_detector_node">
-      	     <rosparam file="$(find beacon_detector)/launch/beacons_info.yaml" command="load"/>
+      <node name="beacon_detector_node" pkg="localizer" type="beacon_detector_node" output="screen">
+            <rosparam file="$(find localizer)/launch/beacon_detector/beacons_info.yaml" command="load"/>
+            <rosparam file="$(find localizer)/launch/beacon_detector/matching_params.yaml" command="load"/>
       </node>
       
-      <node pkg="localizer" type="localizer_node" name="localizer_node" output="screen"/>
+      <node name="localizer_node" pkg="localizer" type="localizer_node" output="screen"/>
 
 	<!-- Hack temporário: map = odom -->
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_identity" args="0 0 0  0 0 0  map odom 100"/>

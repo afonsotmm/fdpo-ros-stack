@@ -1,0 +1,6 @@
+<launch>
+  <node name="beacon_detector_node" pkg="localizer" type="beacon_detector_node" output="screen">
+    <rosparam file="$(find localizer)/launch/beacon_detector/beacons_info.yaml" command="load"/>
+    <rosparam file="$(find localizer)/launch/beacon_detector/matching_params.yaml" command="load"/>
+  </node>
+</launch>

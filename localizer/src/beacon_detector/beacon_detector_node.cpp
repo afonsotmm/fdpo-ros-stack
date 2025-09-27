@@ -1,4 +1,4 @@
-#include "beacon_detector_node.h"
+#include "beacon_detector/beacon_detector_node.h"
 
 // ---------------------------------------------------------------------------------------
 //                               BeaconDetector Class 
@@ -16,7 +16,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
 
-    beaconEstimation_pub = nh.advertise<beacon_detector::BeaconMatch>("beacon_Estimation", 1);
+    beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_Estimation", 1);
 
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
     beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
@@ -205,7 +205,7 @@ void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
 
     if(beaconToCluster.empty()) return;
 
-    beacon_detector::BeaconMatch beacons_aux;
+    localizer::BeaconMatch beacons_aux;
 
     beacons_aux.header = header;          
     beacons_aux.header.frame_id = target_frame; 
@@ -221,7 +221,7 @@ void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
         cluster_aux = clusters[cluster_index];
         int numPoints = static_cast<int>(cluster_aux.points.size());
 
-        beacon_detector::Cluster cluster_msg;
+        localizer::Cluster cluster_msg;
         cluster_msg.beacon_match_name = beacon.name;
         cluster_msg.num_points = numPoints;
         cluster_msg.centroid.x = cluster_aux.centroid.x;
@@ -229,7 +229,7 @@ void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
 
         for(int point_id = 0; point_id < numPoints; ++point_id) {
 
-            beacon_detector::Pose point_aux; 
+            localizer::Pose point_aux; 
             point_aux.x = cluster_aux.points[point_id].x;
             point_aux.y = cluster_aux.points[point_id].y;
 

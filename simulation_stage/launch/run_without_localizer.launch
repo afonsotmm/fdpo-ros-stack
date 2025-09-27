@@ -14,8 +14,9 @@
       <node pkg="rviz" type="rviz" name="rviz" output="screen" required="false"
             args="-d $(arg rviz_config)"/>
 
-      <node pkg="beacon_detector" type="beacon_detector_node" name="beacon_detector_node">
-      	     <rosparam file="$(find beacon_detector)/launch/beacons_info.yaml" command="load"/>
+      <node name="beacon_detector_node" pkg="localizer" type="beacon_detector_node" output="screen">
+            <rosparam file="$(find localizer)/launch/beacon_detector/beacons_info.yaml" command="load"/>
+            <rosparam file="$(find localizer)/launch/beacon_detector/matching_params.yaml" command="load"/>
       </node>
 
       <node pkg="navigation_controller" type="navigation_controller_node" name="navigation_controller">
@@ -23,11 +24,9 @@
             <rosparam file="$(find navigation_controller)/launch/navigation_parameters.yaml" command="load"/>
       </node>
       <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" output="screen"/>
-      
-      <!--node pkg="localizer" type="localizer_node" name="localizer_node" output="screen"/-->
 
        <node pkg="odom_path_tools" type="odoms_to_paths_node" name="odoms_to_paths" output="screen">
-	  <param name="mode" value="path"/> <!-- "path" ou "marker" -->
+	  <param name="mode" value="path"/> <!-- "path" or "marker" -->
 	  <param name="fixed_frame" value="map"/>
 	  <param name="topic_odom_filtered" value="/odometry/filtered"/>
 	  <param name="topic_odom" value="/odom"/>
@@ -36,6 +35,6 @@
 	  <param name="min_dt" value="0.05"/>
 </node>
 
-	<!-- Hack temporário: map = odom -->
+	<!-- map = odom -->
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom_identity" args="0 0 0  0 0 0  map odom 100"/>
 </launch>

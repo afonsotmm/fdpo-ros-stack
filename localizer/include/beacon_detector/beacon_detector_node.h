@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "pose.h"
-#include "point.h"
-#include "cluster.h"
+#include "general/pose.h"
+#include "general/point.h"
+#include "general/cluster.h"
 #include "dbscan.h"
-#include "beacon_detector/Pose.h"
-#include "beacon_detector/Cluster.h"
-#include "beacon_detector/BeaconMatch.h"
+#include "localizer/Pose.h"
+#include "localizer/Cluster.h"
+#include "localizer/BeaconMatch.h"
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>

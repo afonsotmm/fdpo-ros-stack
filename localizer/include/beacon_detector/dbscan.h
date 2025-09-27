@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "point.h"
-#include "cluster.h"
+#include "general/point.h"
+#include "general/cluster.h"
 
 #include <vector>
 #include <deque>

@@ -1,4 +1,4 @@
-#include "dbscan.h"
+#include "beacon_detector/dbscan.h"
 
 // ---------------------------------------------------------------------------------------
 //                               DBSCAN Class 
