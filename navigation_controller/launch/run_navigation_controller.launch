@@ -1,5 +1,0 @@
-<launch>
-
-    <include file="$(find conf)/launch/navigation/navigation_controller/run_navigation_controller.launch"/>
-
-</launch>

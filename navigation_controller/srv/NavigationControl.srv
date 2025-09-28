@@ -1,4 +1,0 @@
-string command   # "start" | "pause" | "unpause" | "stop"
----
-bool success
-string message

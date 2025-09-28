@@ -1,5 +1,0 @@
-<launch>
-
-  <include file="$(find conf)/launch/navigation/localizer/beacon_detector/run_beacon_detector.launch"/>
-
-</launch>
