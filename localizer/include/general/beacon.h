@@ -7,5 +7,6 @@ struct Beacon {
 
     std::string name;
     Pose pose;
+    double radius;
 
 };

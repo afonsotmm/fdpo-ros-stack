@@ -61,6 +61,10 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "typeindex": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "csignal": "cpp",
+        "codecvt": "cpp",
+        "future": "cpp",
+        "variant": "cpp"
     }
 }

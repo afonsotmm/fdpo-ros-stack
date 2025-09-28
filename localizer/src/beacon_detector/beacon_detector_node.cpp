@@ -12,7 +12,6 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     target_frame = "base_link";
 
     nh.param("max_match_dist", maxMatchDist, 0.2);
-    nh.param("centroid_offset", centroidOffset, 0.045/2);
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
 
@@ -25,6 +24,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     publishBeaconsInMap();
 
     ROS_INFO("BeaconDetector instance created.");
+
 }
 
 BeaconDetector::~BeaconDetector() {
@@ -32,6 +32,14 @@ BeaconDetector::~BeaconDetector() {
     delete tf_listener;
 	delete tf_buffer;
 
+}
+
+double BeaconDetector::normalizeAngle(double theta) {
+
+    while(theta > M_PI) theta -= 2.0 * M_PI;
+    while (theta <= -M_PI) theta += 2.0*M_PI;
+
+    return theta;
 }
 
 void BeaconDetector::pointCloud2XY(const sensor_msgs::PointCloud2& cloud, std::vector<Point>& out)
@@ -69,13 +77,6 @@ void BeaconDetector::dataClustering(std::vector<Point>& dataPoints) {
 
     for(auto& cluster: dbscan.clusters) {
 
-        const double r = std::hypot(cluster.centroid.x, cluster.centroid.y); 
-
-        if (centroidOffset != 0.0 && r > 1e-6) {
-            cluster.centroid.x += centroidOffset * (cluster.centroid.x / r);
-            cluster.centroid.y += centroidOffset * (cluster.centroid.y / r);
-        }
-
         clusters.push_back(cluster);
         clustersCentroids_robotFrame.push_back(cluster.centroid);
 
@@ -102,6 +103,7 @@ void BeaconDetector::loadBeaconsFromParams() {
             beacon_temp.name = static_cast<std::string>(beaconsParams[beacon_id]["name"]);
             beacon_temp.pose.x =  static_cast<double>(beaconsParams[beacon_id]["x"]);
             beacon_temp.pose.y =  static_cast<double>(beaconsParams[beacon_id]["y"]);
+            beacon_temp.radius =  static_cast<double>(beaconsParams[beacon_id]["radius"]);
 
             beacons_globalFrame.push_back(beacon_temp);
         }
@@ -153,16 +155,18 @@ void BeaconDetector::updateRobotFrameBeacons(const ros::Time& stamp) {
         beacon_temp.name = beacon.name;
         beacon_temp.pose.x = p_robotFrame.point.x;
         beacon_temp.pose.y = p_robotFrame.point.y;
+        beacon_temp.radius = beacon.radius;
 
         beacons_robotFrame.push_back(beacon_temp);
     }
 
 }
 
-// Neste momento esta função depende da ordem no vetor dos beacons, portanto dps mudar para o global greedy ou Hungarian
+// Neste momento esta função depende da ordem no vetor dos beacons, portanto dps mudar para o Hungarian
 void BeaconDetector::matchBeaconsToClusters() {
 
     beaconToCluster.clear();
+    beacons_measured.clear();
 
     std::vector<bool> used(clustersCentroids_robotFrame.size(), false);
 
@@ -192,13 +196,87 @@ void BeaconDetector::matchBeaconsToClusters() {
         } 
         
         if(bestMatch != -1) {
+
+            used[bestMatch] = true;
             
             beaconToCluster[beacons_robotFrame[beacon_index].name] = bestMatch;
-            used[bestMatch] = true;
+
+            Beacon beacon_temp;
+            beacon_temp.name = beacons_robotFrame[beacon_index].name;
+            beacon_temp.pose = clusters[bestMatch].centroid;
+            beacon_temp.radius = beacons_robotFrame[beacon_index].radius;
+            beacons_measured[beacons_robotFrame[beacon_index].name] = beacon_temp;
         
         }
     }
 
+}
+
+double BeaconDetector::computeCentroidOffset(const std::string& beacon_name, const double& beacon_radius) {
+
+    auto it = beaconToCluster.find(beacon_name);
+    if (it == beaconToCluster.end()) return 0.0;  // without association
+    if (beacon_radius <= 0.0) return 0.0;        
+
+    const Cluster& cluster_temp = clusters[it->second];
+    if (cluster_temp.points.size() < 2) return 0.0;
+
+    Pose point_c = cluster_temp.centroid;
+    double aref = std::atan2(point_c.y, point_c.x);
+
+    // to choose the extreme points 
+    int i_min = 0, i_max = 0;
+    double a_min = normalizeAngle(std::atan2(cluster_temp.points[0].y, cluster_temp.points[0].x) - aref);
+    double a_max = a_min;
+
+    for (int i = 1; i < (int)cluster_temp.points.size(); ++i) {
+        double a = normalizeAngle(std::atan2(cluster_temp.points[i].y, cluster_temp.points[i].x) - aref);
+        if (a < a_min) { a_min = a; i_min = i; }
+        if (a > a_max) { a_max = a; i_max = i; }
+    }
+    Pose point_1 = cluster_temp.points[i_min];
+    Pose point_n = cluster_temp.points[i_max];
+
+    double L = std::hypot(point_1.x - point_n.x, point_1.y - point_n.y);
+    double s = L/beacon_radius * 0.5;
+    if(s > 1.0) s = 1.0;
+    else if(s < -1.0) s = -1.0;
+
+    double alfa = std::asin(s);
+
+    double dist_c1 = std::hypot(point_c.x - point_1.x, point_c.y - point_1.y);
+    double dist_cn = std::hypot(point_c.x - point_n.x, point_c.y - point_n.y);
+    double dist_c_average = (dist_c1 + dist_cn) * 0.5;
+
+    double cos_alfa = std::cos(alfa), cos_alfa_2 = cos_alfa * cos_alfa;
+
+    double rad = beacon_radius*beacon_radius * cos_alfa_2 
+               - (beacon_radius*beacon_radius - dist_c_average*dist_c_average);
+    if (rad < 0.0) rad = 0.0; 
+    
+    double offset = beacon_radius * cos_alfa 
+                  + std::sqrt(rad);
+
+    return offset;
+}
+
+
+void BeaconDetector::beaconsCentroidCompensation() {
+
+    for(auto& bn_to_beacon : beacons_measured) {
+
+        Beacon& beacon = bn_to_beacon.second;
+
+        const double r = std::hypot(beacon.pose.x, beacon.pose.y);
+        double offset = computeCentroidOffset(beacon.name, beacon.radius);
+
+        if (offset != 0.0 && r > 1e-6) {
+            beacon.pose.x += offset * (beacon.pose.x / r);
+            beacon.pose.y += offset * (beacon.pose.y / r);
+        }
+
+    }
+ 
 }
 
 void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
@@ -224,8 +302,15 @@ void BeaconDetector::publishBeaconsEstimation(const std_msgs::Header& header) {
         localizer::Cluster cluster_msg;
         cluster_msg.beacon_match_name = beacon.name;
         cluster_msg.num_points = numPoints;
-        cluster_msg.centroid.x = cluster_aux.centroid.x;
-        cluster_msg.centroid.y = cluster_aux.centroid.y;
+        
+        auto it_meas = beacons_measured.find(beacon.name);
+        if (it_meas != beacons_measured.end()) {
+            cluster_msg.centroid.x = it_meas->second.pose.x;  // centro corrigido
+            cluster_msg.centroid.y = it_meas->second.pose.y;
+        } else {
+            cluster_msg.centroid.x = cluster_aux.centroid.x;  // fallback: centróide bruto
+            cluster_msg.centroid.y = cluster_aux.centroid.y;
+        }
 
         for(int point_id = 0; point_id < numPoints; ++point_id) {
 
@@ -268,10 +353,11 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     dataClustering(dataPoints);
     updateRobotFrameBeacons(scan->header.stamp);
     matchBeaconsToClusters();
+    beaconsCentroidCompensation();
     publishBeaconsEstimation(scan->header);
 
     #ifdef RVIZ_VISUALIZATION
-    publishBeaconAssociations();
+        publishBeaconAssociations();
     #endif
 
 }
@@ -317,9 +403,7 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     pts.pose.orientation.w = 1.0;
     pts.scale.x = 0.05; // diâmetro dos pontos (m)
     pts.scale.y = 0.05;
-
     colorFromId(pts.color, i);
-
     pts.lifetime = ros::Duration(0.2);
 
     pts.points.reserve(cl.points.size());
@@ -346,7 +430,7 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     centroid.lifetime = ros::Duration(0.2);
     arr.markers.push_back(centroid);
 
-    // 3) Etiqueta do cluster (opcional)
+    // 3) Etiqueta do cluster
     visualization_msgs::Marker label;
     label.header = pts.header;
     label.ns = "dbscan_label";
@@ -357,7 +441,7 @@ void BeaconDetector::publishClusters(const std::vector<Cluster>& clusters) {
     label.pose.position.y = cl.centroid.y;
     label.pose.position.z = 0.25;
     label.pose.orientation.w = 1.0;
-    label.scale.z = 0.18;  // altura do texto (m)
+    label.scale.z = 0.18;
     colorFromId(label.color, i);
     label.lifetime = ros::Duration(0.2);
     label.text = std::to_string(i);

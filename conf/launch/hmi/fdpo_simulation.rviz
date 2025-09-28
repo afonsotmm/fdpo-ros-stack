@@ -8,9 +8,8 @@ Panels:
         - /Status1
         - /MarkerArray1
         - /MarkerArray1/Namespaces1
-        - /Path1
-        - /Path2
-        - /Path3
+        - /MarkerArray2
+        - /MarkerArray2/Namespaces1
       Splitter Ratio: 0.5587392449378967
     Tree Height: 719
   - Class: rviz/Selection
@@ -91,7 +90,7 @@ Visualization Manager:
         beacon_assoc: false
         beacon_name: false
         beacons_pred: true
-        dbscan_centroid: true
+        dbscan_centroid: false
         dbscan_label: false
         dbscan_points: false
       Queue Size: 100
@@ -168,6 +167,15 @@ Visualization Manager:
       Topic: /odom/path
       Unreliable: false
       Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /viz_mux/markers
+      Name: MarkerArray
+      Namespaces:
+        beacon_center_label: false
+        beacon_center_meas: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -205,10 +213,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 358.72705078125
+      Scale: 306.6536560058594
       Target Frame: <Fixed Frame>
-      X: 0.943305253982544
-      Y: -0.4712058901786804
+      X: -0.2238834798336029
+      Y: -0.16471996903419495
     Saved: ~
 Window Geometry:
   Displays:

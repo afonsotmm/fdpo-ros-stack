@@ -42,15 +42,22 @@ class BeaconDetector {
 
         std::vector<Cluster> clusters;
         std::vector<Beacon> beacons_globalFrame;
+        void loadBeaconsFromParams();
+        
+        // Fixed Beacons Map -> Base_link
         std::vector<Beacon> beacons_robotFrame;
         std::vector<Pose> clustersCentroids_robotFrame;
-        std::unordered_map<std::string, int> beaconToCluster; // beacon_name -> cluster_index 
+
+        // "Measured" Beacons
+        std::unordered_map<std::string, Beacon> beacons_measured;
 
         double maxMatchDist;
-        double centroidOffset;
-        void loadBeaconsFromParams();
-        void updateRobotFrameBeacons(const ros::Time& stamp);
+        std::unordered_map<std::string, int> beaconToCluster; // beacon_name -> cluster_index 
         void matchBeaconsToClusters();
+        void updateRobotFrameBeacons(const ros::Time& stamp);
+
+        double computeCentroidOffset(const std::string& beacon_name, const double& beacon_radius);
+        void beaconsCentroidCompensation();
 
         std::string target_frame;
 		tf2_ros::Buffer *tf_buffer;
@@ -68,8 +75,11 @@ class BeaconDetector {
         ros::Publisher markers_pub_;
         void publishClusters(const std::vector<Cluster>& clusters);
         void publishBeaconAssociations();
+
         ros::Publisher beacons_map_pub_; 
         void publishBeaconsInMap();    
+
+        double normalizeAngle(double theta);
 };
 
 

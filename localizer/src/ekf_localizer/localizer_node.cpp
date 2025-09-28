@@ -10,12 +10,12 @@ LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : nh(nh), tf_buffer(ros::Durat
     X_state(2) = 0.0;
 
     P.setZero();
-    P(0,0) = P(1,1) = P(2,2) = 1.0;
+    P(0,0) = P(1,1) = P(2,2) = 2.0;
 
     // Testar vários valores
     Q.setZero();
-    Q(0,0) = 9.0e-4;  
-    Q(1,1) = 2.5e-3;
+    Q(0,0) = 9.0e-6;  
+    Q(1,1) = 2.5e-5;
     
     odometry_sub = nh.subscribe("/odom", 10, &LocalizerNode::ekf_predict, this);
     beacon_sub = nh.subscribe("/beacon_estimation", 10, &LocalizerNode::ekf_update, this);
@@ -144,7 +144,7 @@ void LocalizerNode::ekf_update(const localizer::BeaconMatch::ConstPtr& msg) {
 
         // Measured Covariance
         double sigma_r  = 0.05;  
-        double sigma_th = 1.5 * M_PI/180.0;
+        double sigma_th = 0.5 * M_PI/180.0;
         // double sigma_r  = 0.03 + 0.02 * dist_estimated;  
         // double sigma_th = 1.5 * M_PI/180.0;
 

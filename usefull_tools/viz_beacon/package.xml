@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>viz_mux</name>
+  <version>0.1.0</version>
+  <description>Visualization multiplexer node for beacon_Estimation and other topics.</description>
+
+  <maintainer email="you@example.com">Your Name</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Runtime deps (and build deps) -->
+  <depend>roscpp</depend>
+  <depend>visualization_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <!-- Dependency on the package that defines localizer/BeaconMatch -->
+  <depend>localizer</depend>
+
+  <export/>
+</package>

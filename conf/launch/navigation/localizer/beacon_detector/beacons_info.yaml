@@ -7,17 +7,21 @@ beacons:
   - name: "B1"
     x: -0.880
     y: 0.630
+    radius: 0.045
 
   - name: "B2"
     x: 0.880
     y: 0.630
+    radius: 0.045
 
   - name: "B3"
     x: -0.880
     y: -0.630
+    radius: 0.045
 
   - name: "B4"
     x: 0.880
     y: -0.630
+    radius: 0.045
 
 

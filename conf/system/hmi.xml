@@ -12,4 +12,6 @@
 
     <include file="$(find conf)/launch/hmi/fdpo_rviz.launch"/>
 
+    <include file="$(find conf)/launch/hmi/fdpo_beacons_viz.launch"/>
+
 </launch>
