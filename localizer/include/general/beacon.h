@@ -5,7 +5,7 @@
 
 struct Beacon {
 
-    std::string id;
+    std::string name;
     Pose pose;
 
 };

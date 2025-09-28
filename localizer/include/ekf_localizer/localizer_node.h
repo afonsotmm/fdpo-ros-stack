@@ -25,8 +25,11 @@ class LocalizerNode {
         LocalizerNode(ros::NodeHandle& nh);
 
     private:
+        ros::NodeHandle& nh;
+
         double dt;
         double v_e, w_e;
+
         ros::Time odom_stamp;
         ros::Time last_state_stamp_;
 
@@ -40,6 +43,8 @@ class LocalizerNode {
         void ekf_predict(const nav_msgs::Odometry::ConstPtr& msg);
 
         std::unordered_map <std::string, Beacon> beacons;
+        void loadBeaconsFromParams();
+
         ros::Subscriber beacon_sub;
         void ekf_update(const localizer::BeaconMatch::ConstPtr& msg);
 

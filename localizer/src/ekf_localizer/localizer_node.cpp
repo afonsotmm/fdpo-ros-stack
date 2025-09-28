@@ -1,22 +1,8 @@
 #include "ekf_localizer/localizer_node.h"
 
-LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : tf_buffer(ros::Duration(10.0))  {
+LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : nh(nh), tf_buffer(ros::Duration(10.0))  {
 
-    // --- Temporário ---
-        Beacon b_aux;
-
-        b_aux.id = "B1"; b_aux.pose.x = -0.880; b_aux.pose.y = 0.630;
-        beacons.insert({"B1", b_aux});
-
-        b_aux.id = "B2"; b_aux.pose.x = 0.880; b_aux.pose.y = 0.630;
-        beacons.insert({"B2", b_aux});
-
-        b_aux.id = "B3"; b_aux.pose.x = -0.880; b_aux.pose.y = -0.630;
-        beacons.insert({"B3", b_aux});
-
-        b_aux.id = "B4"; b_aux.pose.x = 0.880; b_aux.pose.y = -0.630;
-        beacons.insert({"B4", b_aux});
-    // ----------------------
+    loadBeaconsFromParams();
 
     // Pos. inicial
     X_state(0) = 0.0;
@@ -28,15 +14,43 @@ LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : tf_buffer(ros::Duration(10.0
 
     // Testar vários valores
     Q.setZero();
-    Q(0,0) = 0.5;  
-    Q(1,1) = 0.5;
+    Q(0,0) = 9.0e-4;  
+    Q(1,1) = 2.5e-3;
+    
     odometry_sub = nh.subscribe("/odom", 10, &LocalizerNode::ekf_predict, this);
     beacon_sub = nh.subscribe("/beacon_estimation", 10, &LocalizerNode::ekf_update, this);
     pose_pub = nh.advertise<nav_msgs::Odometry>("/odometry/filtered", 10);
 
-    // TEMP WIP
     tf_listener = std::make_unique<tf2_ros::TransformListener>(tf_buffer);
+}
 
+void LocalizerNode::loadBeaconsFromParams() {
+
+    beacons.clear();
+
+    XmlRpc::XmlRpcValue beaconsParams;
+
+    if(nh.getParam("/beacon_detector_node/beacons", beaconsParams)) {
+
+        for(int beacon_id = 0; beacon_id < static_cast<int>(beaconsParams.size()); beacon_id++) {
+
+            Beacon beacon_temp;
+            
+            beacon_temp.name = static_cast<std::string>(beaconsParams[beacon_id]["name"]);
+            beacon_temp.pose.x = static_cast<double>(beaconsParams[beacon_id]["x"]);
+            beacon_temp.pose.y = static_cast<double>(beaconsParams[beacon_id]["y"]);
+
+            beacons.insert({beacon_temp.name, beacon_temp});
+        }
+
+    };
+
+    ROS_INFO("[LocalizerNode] Loaded %zu beacons:", beacons.size());
+    for (const auto& kv : beacons) {
+        const auto& name = kv.first;
+        const auto& b    = kv.second;
+        ROS_INFO("  - %s: x=%.3f, y=%.3f", name.c_str(), b.pose.x, b.pose.y);
+    }
 
 }
 
@@ -129,10 +143,10 @@ void LocalizerNode::ekf_update(const localizer::BeaconMatch::ConstPtr& msg) {
         Z_estimated(1) = theta_estimated;
 
         // Measured Covariance
+        double sigma_r  = 0.05;  
+        double sigma_th = 1.5 * M_PI/180.0;
         // double sigma_r  = 0.03 + 0.02 * dist_estimated;  
         // double sigma_th = 1.5 * M_PI/180.0;
-        double sigma_r  = 0.05;  
-        double sigma_th = 2.0 * M_PI/180.0;
 
         R(0,0) = sigma_r * sigma_r; R(0,1) = R(1,0) = 0; R(1,1) = sigma_th * sigma_th;
 

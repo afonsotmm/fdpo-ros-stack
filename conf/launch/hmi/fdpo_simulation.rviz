@@ -11,7 +11,7 @@ Panels:
         - /Path1
         - /Path2
         - /Path3
-      Splitter Ratio: 0.5616045594215393
+      Splitter Ratio: 0.5587392449378967
     Tree Height: 719
   - Class: rviz/Selection
     Name: Selection
@@ -100,7 +100,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 25; 255; 0
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -119,12 +119,12 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /base_pose_ground_truth/path
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
       Color: 114; 159; 207
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -143,7 +143,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /odometry/filtered/path
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -205,10 +205,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 224.63848876953125
+      Scale: 358.72705078125
       Target Frame: <Fixed Frame>
-      X: 1.55088472366333
-      Y: -0.06102384626865387
+      X: 0.943305253982544
+      Y: -0.4712058901786804
     Saved: ~
 Window Geometry:
   Displays:

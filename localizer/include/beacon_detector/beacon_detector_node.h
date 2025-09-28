@@ -7,7 +7,9 @@
 #include "general/pose.h"
 #include "general/point.h"
 #include "general/cluster.h"
+#include "general/beacon.h"
 #include "beacon_detector/dbscan.h"
+
 #include "localizer/Pose.h"
 #include "localizer/Cluster.h"
 #include "localizer/BeaconMatch.h"
@@ -28,14 +30,6 @@
 #include <cmath>
 
 #define RVIZ_VISUALIZATION
-
-
-struct Beacon {
-
-    std::string name;
-    Pose pose;
-
-};
 
 class BeaconDetector {
 
