@@ -177,6 +177,14 @@ With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) be
 (5)  
 ![eq5](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bcorr%7D%7D%20%3D%20p_%7B%5Ctext%7Bmeas%7D%7D%20%2B%20%5CDelta%20r%20%5Ccdot%20%5Chat%7Bu%7D_r.)
 
+**Notes on centroid correction:**  
+* Equation (1)–(2): compute arc span and raw centroid distances.  
+* Equation (3)–(4): correct radial bias assuming cylindrical beacons of radius *R*.  
+* Equation (5): apply correction along the radial unit vector.  
+* Parameters `eps`, `minPoints`, `max_match_dist`, and beacon `radius` strongly affect matching performance.  
+* Works best when beacons are observed as partial arcs in the LiDAR scan.  
+* Incorrect radius values or large occlusions can lead to over- or under-correction.  
+
 ---
 
 #### c) `localizer_node` (EKF)
@@ -184,7 +192,6 @@ With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) be
 * **Subscribe:**
   * `/odom` (`nav_msgs/Odometry`) → prediction step.
   * `/beacon_estimation` (`localizer/BeaconMatch`) → update step.  
-    Topic mismatch: detector publishes `beacon_Estimation`.  
 * **State:** ![X](https://latex.codecogs.com/png.latex?X%20%3D%20%5Bx%2C%20y%2C%20%5Ctheta%5D), with covariance ![P](https://latex.codecogs.com/png.latex?P%20%5Cin%20%5Cmathbb%7BR%7D%5E%7B3%5Ctimes3%7D).  
 * **Prediction:** unicycle motion model with noise.  
 * **Measurement model:**
@@ -230,9 +237,9 @@ Service: `~/control` (`NavigationControl.srv`).
 
 States: `idle → driveToGoal → turnToFinalYaw → done`.
 
----
 
-### Control Laws
+
+#### Control Laws
 
 Errors:  
 ![e_defs](https://latex.codecogs.com/png.latex?e_p%20%3D%20%5B%20x_d-x%2C%20y_d-y%20%5D%5ET%2C%20%5Cquad%20e_%5Ctheta%20%3D%20wrap%28%5Ctheta_d-%5Ctheta%29.)
@@ -308,7 +315,7 @@ Not defined yet — confirm before external use.
 
 ## Credits
 
-Developed by **ECE students @ FEUP** for **Robot Factory 4.0** (National Robotics Festival 2025):
+Developed by **Electrical and Computer Engineering students at FEUP students at FEUP** for **Robot Factory 4.0** (National Robotics Festival 2025):
 
 * *Afonso Mateus*  
 * *Christian Geyer*  
