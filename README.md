@@ -2,7 +2,7 @@
 
 ROS1 (Noetic) stack for local navigation with HLDS HLS‑LFCD2 LiDAR, beacon‑based localization (with EKF), navigation controller, and **Stage** simulation. The **`conf/`** package acts as the *single source of truth* for launch wrappers and parameter configuration.
 
-> Context: developed for the **Robot Factory 4.0** competition at the **National Robotics Festival 2025**.
+> Context: developed by **Electrical and Computer Engineering students at FEUP (Faculty of Engineering, University of Porto)** for the **Robot Factory 4.0** competition at the **National Robotics Festival 2025**.
 
 ---
 
@@ -48,7 +48,11 @@ roslaunch conf/script/wake_up_fdpo.launch
   * `dynamic_reconfigure`
   * Visualization: `rviz`, `visualization_msgs`
 * **Simulation:** Stage (`stage_ros`)
-* **Hardware (real robot):** HLDS HLS‑LFCD LiDAR (LDS‑01/02) — *driver included in this repository*.
+* **Hardware (real robot):**
+
+  * HLDS HLS‑LFCD LiDAR (LDS‑01/02) — *driver included in this repository*.
+  * **Raspberry Pi 4** running ROS and this stack (high‑level)
+  * **Raspberry Pi Pico** handling motor and actuator control (low‑level)
 
 > Tip: install missing packages via `apt` (e.g. `sudo apt install ros-noetic-tf2-ros ros-noetic-laser-geometry ros-noetic-dynamic-reconfigure ros-noetic-stage-ros`).
 
@@ -95,7 +99,18 @@ FDPO4.0_2025/
 
 **HLDS LiDAR** → **Beacon Detector (DBSCAN + matching)** → **EKF Localizer** → `odom_filtered` → **Navigation Controller (FSM + gains)** → `cmd_vel` → robot base.
 
+*High‑level logic runs on the Raspberry Pi 4 (ROS), while the Raspberry Pi Pico handles motor and actuator control.*
+
 Common frames: `map`, `odom`, `base_link`. The controller uses TF to convert goals/paths from `map` → `odom`.
+
+---
+
+## Work in Progress (WIP)
+
+This project is still under active development:
+
+* A **high‑level planner** for trajectory generation is missing (to be integrated).
+* A **driver node** for communication between the Raspberry Pi 4 and the Raspberry Pi Pico is planned.
 
 ---
 
@@ -183,20 +198,6 @@ Navigation controller (FSM) with **Dynamic Reconfigure** and service interface.
 
 * Service `~/control` (`NavigationControl.srv`): modes (`idle`/`start`/`pause`/`stop`)
 * Dynamic Reconfigure: adjust gains/thresholds live via `rqt_reconfigure`
-
-**Main parameters**
-
-* `loop_rate_hz` (default `30`)
-* **Gains/velocities:**
-
-  * `v_nom` = `0.4` m/s
-  * `w_nom` = `1.2` rad/s
-  * `w_min` = `0.0` rad/s
-  * `kp_linear` = `5.0`
-  * `kp_angular` = `5.0`
-  * `arrive_radius` = `0.05` m
-  * `yaw_tol` = `0.08` rad
-* `rviz_append`: if true, each RViz 2D Nav Goal is appended to the route
 
 **Topics**
 
@@ -356,4 +357,11 @@ No explicit license yet in the repository. Confirm before reusing outside this p
 
 ## Credits
 
-Authors: *Afonso Mateus*, *Christian Geyer*, *Daniel Silva*, *Pedro Lopes* - *Faculdade de Engenharia da Universidade do Porto*. Contributions and PRs welcome.
+Project developed by **Electrical and Computer Engineering students at FEUP (Faculty of Engineering, University of Porto)**:
+
+* *Afonso Mateus*
+* *Christian Geyer*
+* *Daniel Silva*
+* *Pedro Lopes*
+
+Contributions and PRs are welcome.
