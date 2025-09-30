@@ -32,7 +32,7 @@ Brings up drivers, navigation, and HMI through `conf/`.
 roslaunch conf/script/wake_up_fdpo.launch
 ```
 
-> ⚠️ **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
+> **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
 
 ---
 
