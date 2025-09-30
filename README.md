@@ -32,7 +32,7 @@ Brings up drivers, navigation, and HMI through `conf/`.
 roslaunch conf/script/wake_up_fdpo.launch
 ```
 
-> **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
+>  **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
 
 ---
 
@@ -41,7 +41,6 @@ roslaunch conf/script/wake_up_fdpo.launch
 * **OS:** Ubuntu 20.04 LTS (recommended for ROS Noetic)
 * **ROS:** ROS1 Noetic (with `roscpp`, `std_msgs`, `geometry_msgs`, `nav_msgs`)
 * **Dependencies:**
-
   * `tf2`, `tf2_ros`, `tf2_geometry_msgs`
   * `laser_geometry`
   * `message_generation`, `message_runtime`
@@ -49,10 +48,9 @@ roslaunch conf/script/wake_up_fdpo.launch
   * Visualization: `rviz`, `visualization_msgs`
 * **Simulation:** Stage (`stage_ros`)
 * **Hardware (real robot):**
-
   * HLDS HLS‑LFCD LiDAR (LDS‑01/02) — *driver included in this repository*.
   * **Raspberry Pi 4** running ROS and this stack (high‑level)
-  * **Raspberry Pi Pico** handling motor and actuator control (low‑level)
+  * **Raspberry Pi Pico** handling actuator control (low‑level)
 
 > Tip: install missing packages via `apt` (e.g. `sudo apt install ros-noetic-tf2-ros ros-noetic-laser-geometry ros-noetic-dynamic-reconfigure ros-noetic-stage-ros`).
 
@@ -62,35 +60,30 @@ roslaunch conf/script/wake_up_fdpo.launch
 
 ```
 FDPO4.0_2025/
-├─ conf/                      # Launch wrappers & params (single source of truth)
-│  └─ script/wake_up_fdpo.launch
-├─ drivers_stack/
-│  └─ hls_lfcd_lds_driver/    # HLDS LiDAR driver (LDS‑01/02)
-├─ navigation_stack/
-│  ├─ localizer/              # Beacon‑based localization + EKF
-│  │  ├─ msg/                 # Pose.msg, Cluster.msg, BeaconMatch.msg
-│  │  ├─ launch/
-│  │  │  ├─ beacon_detector/run_beacon_detector.launch
-│  │  │  └─ ekf_localizer/run_ekf_localizer.launch
-│  │  ├─ src/
-│  │  │  ├─ beacon_detector/  # DBSCAN clustering + beacon matching
-│  │  │  └─ ekf_localizer/    # EKF fusion
-│  │  └─ include/
-│  └─ navigation_controller/  # Controller + FSM + dynamic_reconfigure
-│     ├─ cfg/Navigation.cfg   # Runtime parameters
-│     ├─ srv/NavigationControl.srv
-│     ├─ launch/run_navigation_controller.launch
-│     └─ src/{fsm.cpp, navigation_controller_node.cpp}
-├─ simulation_stage/          # Stage worlds/models/launch
-│  ├─ worlds/factory_floor.world
-│  ├─ models/
-│  ├─ launch/run_sim_stage.launch
-│  └─ hmi/rviz/fdpo_simulation.rviz (optional)
-├─ utilities_stack/
-│  └─ path_log/               # Logging/visualization utilities
-│     └─ src/odoms_to_paths_node.cpp
-├─ CMakeLists.txt (top‑level)
-└─ README.md
+├─ conf/                             # Centralized launch wrappers & parameters
+│  └─ script/wake_up_fdpo.launch     # Full bring-up of the real robot
+├─ drivers_stack/                    # Hardware drivers
+│  └─ hls_lfcd_lds_driver/           # HLDS LiDAR driver (LDS-01/02)
+├─ navigation_stack/                 # Localization and navigation controller
+│  ├─ localizer/                     # Beacon-based localization with EKF
+│  │  ├─ msg/                        # Custom message definitions
+│  │  ├─ launch/                     # Launch files for detector and EKF
+│  │  ├─ src/                        # Source code (detector + EKF)
+│  │  └─ include/                    # Headers
+│  └─ navigation_controller/         # Path following and FSM control
+│     ├─ cfg/Navigation.cfg          # Dynamic reconfigure parameters
+│     ├─ srv/NavigationControl.srv   # Service for controller commands
+│     ├─ launch/                     # Controller launch files
+│     └─ src/                        # FSM and controller implementation
+├─ simulation_stage/                 # Stage-based simulation environment
+│  ├─ worlds/                        # Factory floor world file(s)
+│  ├─ models/                        # Robot and environment models
+│  ├─ launch/                        # Simulation launch files
+│  └─ hmi/                           # RViz configs for simulation
+├─ utilities_stack/                  # Utility tools
+│  └─ path_log/                      # Odometry-to-path logging node
+├─ CMakeLists.txt                    # Top-level build system
+└─ README.md                         # Project documentation
 ```
 
 ---
@@ -99,7 +92,7 @@ FDPO4.0_2025/
 
 **HLDS LiDAR** → **Beacon Detector (DBSCAN + matching)** → **EKF Localizer** → `odom_filtered` → **Navigation Controller (FSM + gains)** → `cmd_vel` → robot base.
 
-*High‑level logic runs on the Raspberry Pi 4 (ROS), while the Raspberry Pi Pico handles motor and actuator control.*
+High‑level logic runs on the Raspberry Pi 4 (ROS), while the Raspberry Pi Pico handles motor and actuator control.
 
 Common frames: `map`, `odom`, `base_link`. The controller uses TF to convert goals/paths from `map` → `odom`.
 
@@ -109,259 +102,215 @@ Common frames: `map`, `odom`, `base_link`. The controller uses TF to convert goa
 
 This project is still under active development:
 
-* A **high‑level planner** for trajectory generation is missing (to be integrated).
-* A **driver node** for communication between the Raspberry Pi 4 and the Raspberry Pi Pico is planned.
+* A high‑level planner for trajectory generation is missing (to be integrated).
+* A driver node for communication between the Raspberry Pi 4 and the Raspberry Pi Pico is planned.
 
 ---
 
-## Packages & Nodes
+## Package‑by‑Package Details
 
-### 1) `drivers_stack/hls_lfcd_lds_driver`
+### 1) `conf/`
 
-Driver for HLDS LiDAR (LDS‑01/02). Publishes `sensor_msgs/LaserScan` (e.g. `/scan`), with `frame_id` set to the sensor.
+Centralized launch wrappers and parameter files. Instead of launching packages individually, `conf/` provides unified entry points:
 
-**Suggested setup**
+* `wake_up_fdpo.launch`: full system bring‑up (drivers + localization + controller + HMI).
+* Other YAMLs and launch files unify parameter namespaces.
 
-* Check USB/serial port (`/dev/ttyUSB*`, add `udev` rule if needed).
-* Verify `frame_id` and frequency (10 Hz typical).
-
-**Example launch**
-
-```bash
-roslaunch hls_lfcd_lds_driver hlds_laser.launch
-```
-
-> This repo already includes the driver; use its launch files or the wrappers in `conf/`.
+**Role:** ensures consistency between real robot and simulation.
 
 ---
 
-### 2) `navigation_stack/localizer`
+### 2) `drivers_stack/hls_lfcd_lds_driver`
 
-Beacon‑based localization with EKF. Defines custom messages:
+Custom integration of the HLDS LiDAR driver (LDS‑01/02). Handles serial communication, publishes `sensor_msgs/LaserScan`.
 
-* `Pose.msg`: 2D pose (x, y, yaw)
-* `Cluster.msg`: result of DBSCAN clustering
-* `BeaconMatch.msg`: matched beacon↔cluster pair
+**Inputs:** serial data from LiDAR.  
+**Outputs:** `/scan` topic.
 
-#### 2.1) **Beacon Detector** (`beacon_detector_node`)
-
-Clustering of LiDAR points (DBSCAN), projection to robot frame, beacon matching.
-
-**Subscribed topics**
-
-* `sensor_msgs/LaserScan` (e.g. `/base_scan`)
-
-**Published topics**
-
-* `localizer/BeaconMatch` → `/beacon_Estimation`
-* `visualization_msgs/MarkerArray` → `/dbscan_markers`, `/beacons_map_markers`
-
-**Key parameters**
-
-* **Beacon map** (static positions in `map` frame)
-* DBSCAN: `eps`, `minPts`
-* `maxMatchDist`: maximum radius for beacon↔cluster association
-
-**Launch**
-
-```bash
-roslaunch localizer run_beacon_detector.launch
-```
-
-#### 2.2) **EKF Localizer** (`localizer_node`)
-
-EKF fusion of odometry + beacon detections. Outputs filtered odometry.
-
-**Subscribed topics**
-
-* Base odometry (`nav_msgs/Odometry`)
-* `localizer/BeaconMatch`
-
-**Published topics**
-
-* Filtered odometry (`nav_msgs/Odometry`)
-* TF `map↔odom` (or `odom↔base_link`)
-
-**Launch**
-
-```bash
-roslaunch localizer run_ekf_localizer.launch
-```
+**Importance:** entry point for environment perception.
 
 ---
 
-### 3) `navigation_stack/navigation_controller`
+### 3) `navigation_stack/localizer`
 
-Navigation controller (FSM) with **Dynamic Reconfigure** and service interface.
+The localizer stack provides LiDAR‑based beacon detection and EKF fusion. It is composed of two nodes: **`beacon_detector_node`** and **`localizer_node` (EKF)**, and three custom messages.
 
-**Interfaces**
+#### a) Custom Messages
 
-* Service `~/control` (`NavigationControl.srv`): modes (`idle`/`start`/`pause`/`stop`)
-* Dynamic Reconfigure: adjust gains/thresholds live via `rqt_reconfigure`
+* **`localizer/Pose`**: `(float32 x, float32 y)` in the node's frame.
+* **`localizer/Cluster`**: `string beacon_match_name`, `Pose[] points`, `Pose centroid`, `uint32 num_points`.
+* **`localizer/BeaconMatch`**: `std_msgs/Header header`, `Cluster[] clusters`.
 
-**Topics**
+#### b) `beacon_detector_node`
 
-* Publishes velocity commands (`geometry_msgs/Twist`) → `cmd_vel`
-* Subscribes to goals/paths (from RViz, service, or params)
+* **Subscribe:** `/base_scan` (`sensor_msgs/LaserScan`).  
+* **Publish:**
+  * `beacon_Estimation` (`localizer/BeaconMatch`) — **note the capital “E”** in the topic name.
+  * `dbscan_markers` (`visualization_msgs/MarkerArray`) — raw clustered points + centroids.
+  * `beacons_map_markers` (`visualization_msgs/MarkerArray`, latched) — fixed beacons in robot frame.
 
-**Launch**
-
-```bash
-roslaunch navigation_controller run_navigation_controller.launch
-```
-
-**Runtime tuning**
-
-```bash
-rosrun rqt_reconfigure rqt_reconfigure
-```
-
-**Service call example**
-
-```bash
-rosservice call /navigation_controller/control "<NavigationControl fields>"
-```
+**Processing pipeline:**
+1. Convert `LaserScan` → 2D points.  
+2. **DBSCAN** clustering with `eps` and `minPoints`.  
+3. **Nearest‑neighbour matching** between cluster centroids and beacon map.  
+4. **Centroid bias compensation** (see equations below).  
 
 ---
 
-### 4) `utilities_stack/path_log`
+### Centroid Correction — Equations
 
-Utility to convert `nav_msgs/Odometry` to `nav_msgs/Path` for visualization/debug.
+(1)  
+![eq1](https://latex.codecogs.com/png.latex?s%20%3D%20%5Cfrac%7BL%7D%7B2R%7D%2C%20%5Cquad%20%5Calpha%20%3D%20%5Carcsin%28%5Coperatorname%7Bclip%7D%28s%2C-1%2C1%29%29%2C%20%5Cquad%20L%20%3D%20%7C%20p_1%20-%20p_n%20%7C.)
 
-**Example**
+(2)  
+![eq2](https://latex.codecogs.com/png.latex?%5Cbar%7Bd%7D_c%20%3D%20%5Ctfrac%7B1%7D%7B2%7D%5Cleft%28%20%7C%20p_c%20-%20p_1%20%7C%20%2B%20%7C%20p_c%20-%20p_n%20%7C%20%5Cright%29.)
 
-```bash
-rosrun path_log odoms_to_paths_node
-```
+(3)  
+![eq3](https://latex.codecogs.com/png.latex?%5Cmathrm%7Brad%7D%20%3D%20R%5E2%5Ccos%5E2%5Calpha%20-%20%5Cleft%28%20R%5E2%20-%20%5Cbar%7Bd%7D_c%5E2%20%5Cright%29.)
+
+(4)  
+![eq4](https://latex.codecogs.com/png.latex?%5CDelta%20r%20%3D%20R%5Ccos%5Calpha%20%2B%20%5Csqrt%7B%5Cmax%28%5Cmathrm%7Brad%7D%2C%200%29%7D.)
+
+With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) being the measured beacon position and  
+![urhat](https://latex.codecogs.com/png.latex?%5Chat%7Bu%7D_r%20%3D%20%5Cdfrac%7Bp_%7B%5Ctext%7Bmeas%7D%7D%7D%7B%7C%20p_%7B%5Ctext%7Bmeas%7D%7D%20%7C%7D) the unit radial vector:
+
+(5)  
+![eq5](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bcorr%7D%7D%20%3D%20p_%7B%5Ctext%7Bmeas%7D%7D%20%2B%20%5CDelta%20r%20%5Ccdot%20%5Chat%7Bu%7D_r.)
+
+---
+
+#### c) `localizer_node` (EKF)
+
+* **Subscribe:**
+  * `/odom` (`nav_msgs/Odometry`) → prediction step.
+  * `/beacon_estimation` (`localizer/BeaconMatch`) → update step.  
+    Topic mismatch: detector publishes `beacon_Estimation`.  
+* **State:** ![X](https://latex.codecogs.com/png.latex?X%20%3D%20%5Bx%2C%20y%2C%20%5Ctheta%5D), with covariance ![P](https://latex.codecogs.com/png.latex?P%20%5Cin%20%5Cmathbb%7BR%7D%5E%7B3%5Ctimes3%7D).  
+* **Prediction:** unicycle motion model with noise.  
+* **Measurement model:**
+
+![hX](https://latex.codecogs.com/png.latex?h%28X%29%20%3D%20%5Cbegin%7Bbmatrix%7D%20r%20%5C%5C%20%5Cbeta%20%5Cend%7Bbmatrix%7D%2C%20%5Cquad%20r%20%3D%20%5Csqrt%7B%28x_b-x%29%5E2%20%2B%20%28y_b-y%29%5E2%7D%2C%20%5Cquad%20%5Cbeta%20%3D%20%5Coperatorname%7Batan2%7D%28y_b-y%2C%20x_b-x%29%20-%20%5Ctheta.)
+
+* **Main EKF Equations:**
+
+Prediction:  
+![pred](https://latex.codecogs.com/png.latex?X_k%5E-%20%3D%20f%28X_%7Bk-1%7D%2C%20u_k%29)  
+
+Covariance prediction:  
+![covpred](https://latex.codecogs.com/png.latex?P_k%5E-%20%3D%20F_k%20P_%7Bk-1%7D%20F_k%5ET%20%2B%20Q_k)  
+
+Kalman gain:  
+![K](https://latex.codecogs.com/png.latex?K_k%20%3D%20P_k%5E-%20H_k%5ET%20%28H_k%20P_k%5E-%20H_k%5ET%20%2B%20R%29%5E-1)  
+
+State update:  
+![xupd](https://latex.codecogs.com/png.latex?X_k%20%3D%20X_k%5E-%20%2B%20K_k%20%28z_k%20-%20h%28X_k%5E-%29%29)  
+
+Covariance update:  
+![pupd](https://latex.codecogs.com/png.latex?P_k%20%3D%20%28I-K_kH_k%29P_k%5E-)  
+
+* **Outputs:** `odom_filtered` and TF `map → odom`.
+
+---
+
+### 4) `navigation_stack/navigation_controller`
+
+Implements two FSM layers and exposes a service API for control.
+
+#### a) Data structures
+
+* **WayPoint:** `{id, pose{x,y,θ}, align, backwards}`  
+* **Dynamic Reconfigure:** `v_nom, w_nom, kp_linear, kp_angular, arrive_radius, yaw_tol`  
+
+#### b) High‑level FSM
+
+Service: `~/control` (`NavigationControl.srv`).  
+`command ∈ {start, pause, unpause, stop}`.
+
+#### c) Low‑level FSM (GoToXYθ)
+
+States: `idle → driveToGoal → turnToFinalYaw → done`.
+
+---
+
+### Control Laws
+
+Errors:  
+![e_defs](https://latex.codecogs.com/png.latex?e_p%20%3D%20%5B%20x_d-x%2C%20y_d-y%20%5D%5ET%2C%20%5Cquad%20e_%5Ctheta%20%3D%20wrap%28%5Ctheta_d-%5Ctheta%29.)
+
+Angular velocity:  
+![wlaw](https://latex.codecogs.com/png.latex?%5Comega%20%3D%20clip%28k_%5Ctheta%20e_%5Ctheta%2C%20-%5Comega_%7Bnom%7D%2C%20%2B%5Comega_%7Bnom%7D%29.)
+
+Linear velocity:  
+![vlaw](https://latex.codecogs.com/png.latex?v%20%3D%20%5Csigma%20%5Ccdot%20min%28k_p%5C%7Ce_p%5C%7C%2C%20v_%7Bnom%7D%29%2C%20%5Csigma%20%5Cin%20%5C%7B%2B1%2C-1%5C%7D.)
+
+Yaw gate (optional):  
+![gate](https://latex.codecogs.com/png.latex?g%28e_%5Ctheta%29%20%3D%20max%280%2C1-%7Ce_%5Ctheta%7C/%5Ctheta_%7Bgate%7D%29.)
+
+Arrival conditions:  
+![arrive](https://latex.codecogs.com/png.latex?%5C%7Cp_d-p_c%5C%7C%20%5Cle%20r_%7Barrive%7D%2C%20%5Cquad%20%7C%5Ctheta_d-%5Ctheta_c%7C%20%5Cle%20%5Ctheta_%7Btol%7D.)
 
 ---
 
 ### 5) `simulation_stage`
 
-Stage world + launch wrappers.
+* `factory_floor.world`: Stage world map  
+* `run_sim_stage.launch`: launches Stage + stack  
 
-**Launch**
+---
 
+### 6) `utilities_stack/path_log`
+
+Node `odoms_to_paths_node` converts odometry into `nav_msgs/Path` for RViz visualization.
+
+---
+
+## Tutorials
+
+A) **Full Simulation**  
 ```bash
 roslaunch simulation_stage run_sim_stage.launch
 ```
 
-**Contents**
+B) **Beacon Localization Only**  
+```bash
+roslaunch localizer run_beacon_detector.launch
+```
 
-* `worlds/factory_floor.world`
-* `models/`
-* Optional RViz config: `hmi/rviz/fdpo_simulation.rviz`
+C) **EKF Localizer Only**  
+```bash
+roslaunch localizer run_ekf_localizer.launch
+```
 
----
+D) **Navigation Controller Only**  
+```bash
+roslaunch navigation_controller run_navigation_controller.launch
+```
 
-## Tutorials (Step‑by‑Step)
-
-### A) Full Simulation (Stage + navigation + HMI)
-
-1. Build & source workspace:
-
-   ```bash
-   cd ~/catkin_ws_fdpo && catkin_make && source devel/setup.bash
-   ```
-2. Run simulation:
-
-   ```bash
-   roslaunch simulation_stage run_sim_stage.launch
-   ```
-3. (Optional) Open RViz with pre‑configured layout:
-
-   ```bash
-   rviz -d $(rospack find simulation_stage)/hmi/rviz/fdpo_simulation.rviz
-   ```
-4. Send navigation goals in RViz. If `rviz_append:=true`, each click adds to the route.
-5. Adjust controller gains live with `rqt_reconfigure`.
-
-### B) Beacon Localization Only (debug in RViz)
-
-1. Ensure LiDAR publishing `LaserScan`.
-2. Start beacon detector:
-
-   ```bash
-   roslaunch localizer run_beacon_detector.launch
-   ```
-3. In RViz, visualize `/dbscan_markers`, `/beacons_map_markers`, and `LaserScan`.
-
-### C) EKF + Filtered Odometry
-
-1. Ensure odometry + beacon detections are available.
-2. Start EKF:
-
-   ```bash
-   roslaunch localizer run_ekf_localizer.launch
-   ```
-3. Inspect `odom_filtered` vs `odom` in RViz.
-
-### D) Navigation Controller Only
-
-1. Configure parameters (e.g. in `navigation_parameters.yaml`).
-2. Launch controller:
-
-   ```bash
-   roslaunch navigation_controller run_navigation_controller.launch
-   ```
-3. Send goals from RViz or via `~/control` service.
-4. Check published `cmd_vel`.
-
-### E) Real Robot Bring‑up
-
-1. Connect HLDS LiDAR (check USB port).
-2. Build & source workspace.
-3. Launch everything:
-
-   ```bash
-   roslaunch conf/script/wake_up_fdpo.launch
-   ```
-4. Open RViz and check TF, odometry, and velocity commands.
+E) **Real Robot Bring‑up**  
+```bash
+roslaunch conf/script/wake_up_fdpo.launch
+```
 
 ---
 
-## Parameters (Summary)
+## Debugging & Troubleshooting
 
-* **Beacon Detector**: beacon map, DBSCAN `eps`/`minPts`, `maxMatchDist`
-* **EKF Localizer**: process/measurement noise, input topics, frame conventions
-* **Navigation Controller**: loop rate, gains, tolerances, append flag
-* **Stage Simulation**: world, models, topic remaps
-
----
-
-## Debugging Tips
-
-* `rqt_graph` → visualize node/topic graph
-* `rqt_reconfigure` → tune controller live
-* `rostopic echo/Hz` → inspect topics
-* `rosbag record` → log sessions (for EKF debugging)
-* RViz: enable `TF`, `Odometry`, `Path`
-
----
-
-## Troubleshooting
-
-* **"Package not found"** → missing `source devel/setup.bash`
-* **Stage world not loading** → check `stage_ros` installed and paths
-* **`rqt_reconfigure` missing** → install `ros-noetic-dynamic-reconfigure`
-* **LiDAR not starting** → check serial port, permissions, baudrate, `udev` rule
-* **Conflicting TF** → ensure only one publisher per TF link
+* `rqt_graph`, `rqt_reconfigure`, `rostopic echo`  
+* **Problems:** missing `source`, Stage paths, LiDAR serial, TF conflicts  
 
 ---
 
 ## License
 
-No explicit license yet in the repository. Confirm before reusing outside this project.
+Not defined yet — confirm before external use.
 
 ---
 
 ## Credits
 
-Project developed by **Electrical and Computer Engineering students at FEUP (Faculty of Engineering, University of Porto)**:
+Developed by **ECE students @ FEUP** for **Robot Factory 4.0** (National Robotics Festival 2025):
 
-* *Afonso Mateus*
-* *Christian Geyer*
-* *Daniel Silva*
-* *Pedro Lopes*
-
-Contributions and PRs are welcome.
+* *Afonso Mateus*  
+* *Christian Geyer*  
+* *Daniel Silva*  
+* *Pedro Lopes*  
