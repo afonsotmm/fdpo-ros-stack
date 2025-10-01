@@ -44,6 +44,7 @@ class LocalizerNode {
 
         std::unordered_map <std::string, Beacon> beacons;
         void loadBeaconsFromParams();
+        void loadEKFParams();
 
         ros::Subscriber beacon_sub;
         void ekf_update(const localizer::BeaconMatch::ConstPtr& msg);

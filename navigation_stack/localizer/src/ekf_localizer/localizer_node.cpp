@@ -3,22 +3,15 @@
 LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : nh(nh), tf_buffer(ros::Duration(10.0))  {
 
     loadBeaconsFromParams();
+    loadEKFParams();
 
     // Pos. inicial
     X_state(0) = 0.0;
     X_state(1) = 0.0;
     X_state(2) = 0.0;
-
-    P.setZero();
-    P(0,0) = P(1,1) = P(2,2) = 0.0;
-
-    // Testar vários valores
-    Q.setZero();
-    Q(0,0) = 0.005;  
-    Q(1,1) = 0.005;
     
     odometry_sub = nh.subscribe("/odom", 10, &LocalizerNode::ekf_predict, this);
-    beacon_sub = nh.subscribe("/beacon_Estimation", 10, &LocalizerNode::ekf_update, this);
+    beacon_sub = nh.subscribe("/beacon_estimation", 10, &LocalizerNode::ekf_update, this);
     pose_pub = nh.advertise<nav_msgs::Odometry>("/odometry/filtered", 10);
 
     tf_listener = std::make_unique<tf2_ros::TransformListener>(tf_buffer);
@@ -52,6 +45,33 @@ void LocalizerNode::loadBeaconsFromParams() {
         ROS_INFO("  - %s: x=%.3f, y=%.3f", name.c_str(), b.pose.x, b.pose.y);
     }
 
+}
+
+void LocalizerNode::loadEKFParams() {
+    
+    // Initial state covariance matrix P parameters
+    double p_xx, p_yy, p_theta;
+    nh.param("ekf_params/initial_covariance/position_x", p_xx, 0.5);
+    nh.param("ekf_params/initial_covariance/position_y", p_yy, 0.5);
+    nh.param("ekf_params/initial_covariance/orientation", p_theta, 0.5);
+    
+    P.setZero();
+    P(0,0) = p_xx;
+    P(1,1) = p_yy;
+    P(2,2) = p_theta;
+    
+    // Process covariance matrix Q parameters
+    double q_xx, q_yy;
+    nh.param("ekf_params/process_covariance/position_x", q_xx, 0.0005);
+    nh.param("ekf_params/process_covariance/position_y", q_yy, 0.0005);
+    
+    Q.setZero();
+    Q(0,0) = q_xx;
+    Q(1,1) = q_yy;
+    
+    ROS_INFO("[LocalizerNode] EKF Parameters loaded:");
+    ROS_INFO("  - Initial covariance P: [%.6f, %.6f, %.6f]", p_xx, p_yy, p_theta);
+    ROS_INFO("  - Process covariance Q: [%.6f, %.6f]", q_xx, q_yy);
 }
 
 double LocalizerNode::normalizeAngle(double theta) {

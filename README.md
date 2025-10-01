@@ -145,7 +145,7 @@ The localizer stack provides LiDAR‑based beacon detection and EKF fusion. It i
 
 * **Subscribe:** `/base_scan` (`sensor_msgs/LaserScan`).  
 * **Publish:**
-  * `beacon_Estimation` (`localizer/BeaconMatch`) — **note the capital “E”** in the topic name.
+  * `beacon_estimation` (`localizer/BeaconMatch`) — beacon detection and matching results.
   * `dbscan_markers` (`visualization_msgs/MarkerArray`) — raw clustered points + centroids.
   * `beacons_map_markers` (`visualization_msgs/MarkerArray`, latched) — fixed beacons in robot frame.
 

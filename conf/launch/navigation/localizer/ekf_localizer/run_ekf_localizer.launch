@@ -1,3 +1,6 @@
 <launch>
+  <!-- Load EKF parameters -->
+  <rosparam file="$(find conf)/launch/navigation/localizer/ekf_params.yaml" command="load"/>
+  
   <node name="localizer_node" pkg="localizer" type="localizer_node" output="screen"/>
 </launch>

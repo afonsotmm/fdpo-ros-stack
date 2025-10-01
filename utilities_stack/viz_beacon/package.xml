@@ -2,7 +2,7 @@
 <package format="2">
   <name>viz_mux</name>
   <version>0.1.0</version>
-  <description>Visualization multiplexer node for beacon_Estimation and other topics.</description>
+  <description>Visualization multiplexer node for beacon_estimation and other topics.</description>
 
   <maintainer email="you@example.com">Your Name</maintainer>
   <license>BSD</license>
