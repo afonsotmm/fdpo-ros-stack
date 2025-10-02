@@ -193,7 +193,7 @@ With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) be
   * `/odom` (`nav_msgs/Odometry`) → prediction step.
   * `/beacon_estimation` (`localizer/BeaconMatch`) → update step.  
 * **State:** ![X](https://latex.codecogs.com/png.latex?X%20%3D%20%5Bx%2C%20y%2C%20%5Ctheta%5D), with covariance ![P](https://latex.codecogs.com/png.latex?P%20%5Cin%20%5Cmathbb%7BR%7D%5E%7B3%5Ctimes3%7D).  
-* **Prediction:** unicycle motion model with noise.  
+* **Prediction:** motion model with noise.  
 * **Measurement model:**
 
 ![hX](https://latex.codecogs.com/png.latex?h%28X%29%20%3D%20%5Cbegin%7Bbmatrix%7D%20r%20%5C%5C%20%5Cbeta%20%5Cend%7Bbmatrix%7D%2C%20%5Cquad%20r%20%3D%20%5Csqrt%7B%28x_b-x%29%5E2%20%2B%20%28y_b-y%29%5E2%7D%2C%20%5Cquad%20%5Cbeta%20%3D%20%5Coperatorname%7Batan2%7D%28y_b-y%2C%20x_b-x%29%20-%20%5Ctheta.)
