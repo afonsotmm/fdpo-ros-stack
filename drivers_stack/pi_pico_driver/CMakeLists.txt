@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(pi_pico_driver)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -200,3 +200,39 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+################################
+
+cmake_minimum_required(VERSION 3.0.2)
+project(pi_pico_driver)
+
+## Compile as C++11
+add_compile_options(-std=c++11)
+
+## Encontre o catkin e os pacotes ROS que vai usar
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+)
+
+## Declare o pacote catkin
+catkin_package()
+
+## Incluir diretórios
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
+## Declare o executável (seu nó)
+add_executable(pico_driver_node src/pico_driver_node.cpp)
+
+## Linkar as bibliotecas do catkin ao executável
+target_link_libraries(pico_driver_node
+  ${catkin_LIBRARIES}
+)
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
