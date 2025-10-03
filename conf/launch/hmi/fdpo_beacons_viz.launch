@@ -1,7 +1,7 @@
 <launch>
 
     <param name="viz_mux/target_frame" value="map"/>
-    <param name="viz_mux/beacon_topic" value="beacon_Estimation"/>
+    <param name="viz_mux/beacon_topic" value="beacon_estimation"/>
     <param name="viz_mux/out_topic"    value="viz_mux/markers"/>
 
     <node pkg="viz_mux" type="viz_mux_node" name="viz_mux" output="screen"/>

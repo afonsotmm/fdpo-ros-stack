@@ -17,7 +17,7 @@ public:
     : tf_buffer_(), tf_listener_(tf_buffer_) {
 
     pnh.param<std::string>("target_frame", target_frame_, std::string("map"));
-    pnh.param<std::string>("beacon_topic", beacon_topic_, std::string("beacon_Estimation"));
+    pnh.param<std::string>("beacon_topic", beacon_topic_, std::string("beacon_estimation"));
     pnh.param<std::string>("out_topic", out_topic_, std::string("viz_mux/markers"));
 
     pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>(out_topic_, 1);

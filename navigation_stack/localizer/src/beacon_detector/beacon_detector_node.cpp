@@ -15,7 +15,7 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
     sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
 
-    beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_Estimation", 1);
+    beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_estimation", 1);
 
     markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
     beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
