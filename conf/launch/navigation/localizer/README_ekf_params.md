@@ -53,3 +53,4 @@ O sistema irá imprimir os parâmetros carregados no log de inicialização:
   - Initial covariance P: [0.500000, 0.500000, 0.500000]
   - Process covariance Q: [0.000500, 0.000500]
 ```
+
