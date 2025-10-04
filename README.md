@@ -160,22 +160,38 @@ The localizer stack provides LiDAR‑based beacon detection and EKF fusion. It i
 ### Centroid Correction — Equations
 
 (1)  
-![eq1](https://latex.codecogs.com/png.latex?%20%3D%20%5Cfrac%7BL%7D%7B2R%7D%2C%20%5Cquad%20%5Calpha%20%3D%20%5Carcsin%28%5Coperatorname%7Bclip%7D%28s%2C-1%2C1%29%29%2C%20%5Cquad%20L%20%3D%20%7C%20p_1%20-%20p_n%20%7C.)
+
+$$
+s = \frac{L}{2R}, \quad \alpha = \arcsin(\mathrm{clip}(s, -1, 1)), \quad L = |p_1 - p_n|
+$$
 
 (2)  
-![eq2](https://latex.codecogs.com/png.latex?%5Cbar%7Bd%7D_c%20%3D%20%5Ctfrac%7B1%7D%7B2%7D%5Cleft%28%20%7C%20p_c%20-%20p_1%20%7C%20%2B%20%7C%20p_c%20-%20p_n%20%7C%20%5Cright%29.)
+
+$$
+\bar{d}_c = \frac{1}{2}\left(|p_c - p_1| + |p_c - p_n|\right)
+$$
 
 (3)  
-![eq3](https://latex.codecogs.com/png.latex?%5Cmathrm%7Brad%7D%20%3D%20R%5E2%5Ccos%5E2%5Calpha%20-%20%5Cleft%28%20R%5E2%20-%20%5Cbar%7Bd%7D_c%5E2%20%5Cright%29.)
+
+$$
+\mathrm{rad} = R^2 \cos^2 \alpha - \left(R^2 - \bar{d}_c^2\right)
+$$
 
 (4)  
-![eq4](https://latex.codecogs.com/png.latex?%5CDelta%20r%20%3D%20R%5Ccos%5Calpha%20%2B%20%5Csqrt%7B%5Cmax%28%5Cmathrm%7Brad%7D%2C%200%29%7D.)
 
-With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) being the measured beacon position and  
-![urhat](https://latex.codecogs.com/png.latex?%5Chat%7Bu%7D_r%20%3D%20%5Cdfrac%7Bp_%7B%5Ctext%7Bmeas%7D%7D%7D%7B%7C%20p_%7B%5Ctext%7Bmeas%7D%7D%20%7C%7D) the unit radial vector:
+$$
+\Delta r = R \cos \alpha + \sqrt{\max(\mathrm{rad}, 0)}
+$$
+
+With $p_{meas}$ being the measured beacon position and  
+$\hat{u}_r$ the unit radial vector:
 
 (5)  
-![eq5](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bcorr%7D%7D%20%3D%20p_%7B%5Ctext%7Bmeas%7D%7D%20%2B%20%5CDelta%20r%20%5Ccdot%20%5Chat%7Bu%7D_r.)
+
+$$
+p_{\text{corr}} = p_{\text{meas}} + \Delta r \cdot \hat{u}_r, \quad 
+\hat{u}_r = \frac{p_{\text{meas}}}{|p_{\text{meas}}|}
+$$
 
 **Notes on centroid correction:**  
 * Equation (1)–(2): compute arc span and raw centroid distances.  
@@ -192,28 +208,58 @@ With ![pmeas](https://latex.codecogs.com/png.latex?p_%7B%5Ctext%7Bmeas%7D%7D) be
 * **Subscribe:**
   * `/odom` (`nav_msgs/Odometry`) → prediction step.
   * `/beacon_estimation` (`localizer/BeaconMatch`) → update step.  
-* **State:** ![X](https://latex.codecogs.com/png.latex?X%20%3D%20%5Bx%2C%20y%2C%20%5Ctheta%5D), with covariance ![P](https://latex.codecogs.com/png.latex?P%20%5Cin%20%5Cmathbb%7BR%7D%5E%7B3%5Ctimes3%7D).  
+* **State:** $X = [x, y, \theta]$, with covariance $P \in \mathbb{R}^{3 \times 3}$.  
 * **Prediction:** motion model with noise.  
 * **Measurement model:**
 
-![hX](https://latex.codecogs.com/png.latex?h%28X%29%20%3D%20%5Cbegin%7Bbmatrix%7D%20r%20%5C%5C%20%5Cbeta%20%5Cend%7Bbmatrix%7D%2C%20%5Cquad%20r%20%3D%20%5Csqrt%7B%28x_b-x%29%5E2%20%2B%20%28y_b-y%29%5E2%7D%2C%20%5Cquad%20%5Cbeta%20%3D%20%5Coperatorname%7Batan2%7D%28y_b-y%2C%20x_b-x%29%20-%20%5Ctheta.)
+$$
+h(X) =
+\begin{bmatrix}
+r \\
+\beta
+\end{bmatrix},
+\quad
+r = \sqrt{(x_b - x)^2 + (y_b - y)^2},
+\quad
+\beta = \mathrm{atan2}(y_b - y,\, x_b - x) - \theta
+$$
+
+
 
 * **Main EKF Equations:**
 
 Prediction:  
-![pred](https://latex.codecogs.com/png.latex?X_k%5E-%20%3D%20f%28X_%7Bk-1%7D%2C%20u_k%29)  
 
-Covariance prediction:  
-![covpred](https://latex.codecogs.com/png.latex?P_k%5E-%20%3D%20F_k%20P_%7Bk-1%7D%20F_k%5ET%20%2B%20Q_k)  
+$$
+X_k^- = f(X_{k-1}, u_k)
+$$
+
+Covariance prediction:
+
+$$
+P_k^- = F_k P_{k-1} F_k^T + Q_k
+$$
+
 
 Kalman gain:  
-![K](https://latex.codecogs.com/png.latex?K_k%20%3D%20P_k%5E-%20H_k%5ET%20%28H_k%20P_k%5E-%20H_k%5ET%20%2B%20R%29%5E-1)  
+
+$$
+K_k = P_k^- H_k^T (H_k P_k^- H_k^T + R)^{-1}
+$$
+
 
 State update:  
-![xupd](https://latex.codecogs.com/png.latex?X_k%20%3D%20X_k%5E-%20%2B%20K_k%20%28z_k%20-%20h%28X_k%5E-%29%29)  
+
+$$
+X_k = X_k^- + K_k (z_k - h(X_k^-))
+$$
+
 
 Covariance update:  
-![pupd](https://latex.codecogs.com/png.latex?P_k%20%3D%20%28I-K_kH_k%29P_k%5E-)  
+
+$$
+P_k = (I - K_k H_k) P_k^-
+$$
 
 * **Outputs:** `odom_filtered` and TF `map → odom`.
 
@@ -242,19 +288,40 @@ States: `idle → driveToGoal → turnToFinalYaw → done`.
 #### Control Laws
 
 Errors:  
-![e_defs](https://latex.codecogs.com/png.latex?e_p%20%3D%20%5B%20x_d-x%2C%20y_d-y%20%5D%5ET%2C%20%5Cquad%20e_%5Ctheta%20%3D%20wrap%28%5Ctheta_d-%5Ctheta%29.)
+
+$$
+e_p =
+\begin{bmatrix}
+x_d - x \\\\
+y_d - y
+\end{bmatrix},
+\quad
+e_\theta = \mathrm{wrap}(\theta_d - \theta)
+$$
 
 Angular velocity:  
-![wlaw](https://latex.codecogs.com/png.latex?%5Comega%20%3D%20clip%28k_%5Ctheta%20e_%5Ctheta%2C%20-%5Comega_%7Bnom%7D%2C%20%2B%5Comega_%7Bnom%7D%29.)
+
+$$
+\omega = \mathrm{clip}(k_\theta e_\theta, -\omega_{nom}, +\omega_{nom})
+$$
 
 Linear velocity:  
-![vlaw](https://latex.codecogs.com/png.latex?v%20%3D%20%5Csigma%20%5Ccdot%20min%28k_p%5C%7Ce_p%5C%7C%2C%20v_%7Bnom%7D%29%2C%20%5Csigma%20%5Cin%20%5C%7B%2B1%2C-1%5C%7D.)
+
+$$
+v = \sigma \cdot \min(k_p \, |e_p|, v_{nom}), \quad \sigma \in \{ +1, -1 \}
+$$
 
 Yaw gate (optional):  
-![gate](https://latex.codecogs.com/png.latex?g%28e_%5Ctheta%29%20%3D%20max%280%2C1-%7Ce_%5Ctheta%7C/%5Ctheta_%7Bgate%7D%29.)
+
+$$
+g(e_\theta) = \max(0, 1 - |e_\theta| / \theta_{gate})
+$$
 
 Arrival conditions:  
-![arrive](https://latex.codecogs.com/png.latex?%5C%7Cp_d-p_c%5C%7C%20%5Cle%20r_%7Barrive%7D%2C%20%5Cquad%20%7C%5Ctheta_d-%5Ctheta_c%7C%20%5Cle%20%5Ctheta_%7Btol%7D.)
+
+$$
+|p_d - p_c| \le r_{arrive}, \quad |\theta_d - \theta_c| \le \theta_{tol}
+$$
 
 ---
 
