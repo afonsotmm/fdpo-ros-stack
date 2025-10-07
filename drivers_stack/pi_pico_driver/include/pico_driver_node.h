@@ -5,6 +5,14 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <thread>
+#include <string.h>
+#include <iostream>
+
 
 struct Pose {
 
@@ -15,6 +23,7 @@ struct Pose {
 class PiPicoDriver {
     public:
         PiPicoDriver(ros::NodeHandle& nh_);
+        ~PiPicoDriver();
 
     private: 
         ros::NodeHandle& nh;
@@ -27,10 +36,13 @@ class PiPicoDriver {
         void velCallBack(const geometry_msgs::Twist::ConstPtr& msg);
         void PubPose();
         void PubTof();
+        void readSerialLoop();
+        void startSerial(const std::string& port, int baud);
 
         Pose position;
         float Tof;
         bool iman;
         double v_d, w_d;
+        int serial_fd_;
 
 };
