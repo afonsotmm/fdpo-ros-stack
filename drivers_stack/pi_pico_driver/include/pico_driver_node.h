@@ -12,6 +12,9 @@
 #include <thread>
 #include <string.h>
 #include <iostream>
+#include <nav_msgs/Odometry.h>
+#include <tf/transform_datatypes.h>
+
 
 
 struct Pose {
@@ -38,9 +41,11 @@ class PiPicoDriver {
         void PubTof();
         void readSerialLoop();
         void startSerial(const std::string& port, int baud);
+        void DecodeMsg(const std::string& msg);
+        std::string sendCommandAndWait(const std::string& cmd, int timeout_ms);
 
         Pose position;
-        float Tof;
+        bool Tof;
         bool iman;
         double v_d, w_d;
         int serial_fd_;
