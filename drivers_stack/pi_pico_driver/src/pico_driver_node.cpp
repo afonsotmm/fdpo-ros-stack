@@ -136,7 +136,6 @@ std::string PiPicoDriver::syncCall(const std::string& cmd, int timeout_ms) {
         return line;
       }
     }
-    poll_interval.sleep();
   }
 
   ROS_WARN("Timeout esperando resposta da Pico.");
@@ -145,23 +144,34 @@ std::string PiPicoDriver::syncCall(const std::string& cmd, int timeout_ms) {
 
 void PiPicoDriver::decodeMsg(const std::string& msg) {
   if (msg.rfind("POS:", 0) == 0) {
-    std::string data = msg.substr(4);
-    std::stringstream ss(data);
-    double x, y, theta; char c1, c2;
-    if (ss >> x >> c1 >> y >> c2 >> theta) {
+    double x=0, y=0, theta=0;
+    int tof = 0;
+
+    // Tenta com TOF primeiro
+    int n = std::sscanf(msg.c_str(), "POS: %lf, %lf, %lf, TOF: %d", &x, &y, &theta, &tof);
+    if (n < 3) {
+      // fallback: só POS
+      n = std::sscanf(msg.c_str(), "POS: %lf, %lf, %lf", &x, &y, &theta);
+      tof = messageToReceive.box_detection ? 1 : 0; // mantém anterior
+    }
+    if (n >= 3) {
       messageToReceive.odom_pos = {x, y, theta};
       pubOdom();
-    } else {
-      ROS_WARN("Erro ao fazer parse da mensagem POS: %s", msg.c_str());
+      if (msg.find("TOF:") != std::string::npos) {
+        messageToReceive.box_detection = (tof != 0);
+        pubBoxDetection();
+      }
+      return;
     }
+    ROS_WARN("Erro ao fazer parse da mensagem POS: %s", msg.c_str());
     return;
   }
 
   if (msg.rfind("TOF:", 0) == 0) {
+    // (mantém este ramo se a Pico por vezes enviar só TOF)
     std::string data = msg.substr(4);
     data.erase(0, data.find_first_not_of(" \t"));
     data.erase(data.find_last_not_of(" \t") + 1);
-
     int flag = 0;
     std::istringstream iss(data);
     if (iss >> flag) {
@@ -172,6 +182,9 @@ void PiPicoDriver::decodeMsg(const std::string& msg) {
     }
     return;
   }
+
+  // Ignora ruído opcionalmente:
+  if (msg.rfind("ACK:", 0) == 0) return;
 
   ROS_WARN("Mensagem desconhecida: %s", msg.c_str());
 }
@@ -184,9 +197,9 @@ void PiPicoDriver::commTick(const ros::TimerEvent&) {
                                            (messageToSend.pick_box ? "1" : "0"); 
 
   // 2) Send and Wait for response
-  ROS_INFO("Pi4 Message: %s", cmd);
+  ROS_INFO("Pi4 Message: %s", cmd.c_str());
   std::string resp = syncCall(cmd, 50);
-  ROS_INFO("PiPico Message: %s", resp);
+  ROS_INFO("PiPico Message: %s", resp.c_str());
   ROS_INFO("-------------------");
   if (resp.empty()) {
     con_state.missed++;
