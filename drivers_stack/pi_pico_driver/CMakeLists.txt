@@ -30,7 +30,7 @@ include_directories(
 ##   src/pico_driver_main.cpp  → contém o main()
 ##   src/pico_driver_node.cpp  → contém a classe PiPicoDriver
 add_executable(pico_driver_node
-  src/pico_driver_main.cpp
+  src/main.cpp
   src/pico_driver_node.cpp
 )
 
