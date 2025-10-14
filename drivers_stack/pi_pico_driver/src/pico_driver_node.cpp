@@ -184,7 +184,10 @@ void PiPicoDriver::commTick(const ros::TimerEvent&) {
                                            (messageToSend.pick_box ? "1" : "0"); 
 
   // 2) Send and Wait for response
+  ROS_INFO("Pi4 Message: %s", cmd);
   std::string resp = syncCall(cmd, 50);
+  ROS_INFO("PiPico Message: %s", resp);
+  ROS_INFO("-------------------");
   if (resp.empty()) {
     con_state.missed++;
     if (con_state.missed >= 2) con_state.link_ok = false;
