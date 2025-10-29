@@ -79,8 +79,10 @@ void PiPicoDriver::pickBoxCallBack(const std_msgs::Bool::ConstPtr& msg) {
 
 void PiPicoDriver::pubOdom() {
 
+  ros::Time current_time = ros::Time::now();
+  
   nav_msgs::Odometry odom;
-  odom.header.stamp = ros::Time::now();
+  odom.header.stamp = current_time;
   odom.header.frame_id = "odom";
   odom.child_frame_id  = "base_link";
 
@@ -92,6 +94,19 @@ void PiPicoDriver::pubOdom() {
   tf::quaternionTFToMsg(q, odom.pose.pose.orientation);
 
   posePub.publish(odom);
+
+  // Publish TF transform odom -> base_link
+  geometry_msgs::TransformStamped odom_trans;
+  odom_trans.header.stamp = current_time;
+  odom_trans.header.frame_id = "odom";
+  odom_trans.child_frame_id = "base_link";
+
+  odom_trans.transform.translation.x = messageToReceive.odom_pos.x;
+  odom_trans.transform.translation.y = messageToReceive.odom_pos.y;
+  odom_trans.transform.translation.z = 0.0;
+  odom_trans.transform.rotation = odom.pose.pose.orientation;
+
+  tf_broadcaster.sendTransform(odom_trans);
 
 }
 
