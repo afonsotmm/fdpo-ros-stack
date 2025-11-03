@@ -11,8 +11,10 @@
     </node>
 
     <!-- TF fixa base_link -> laser -->
-    <arg name="laser_xyz" default="0 0 0.0"/>        
-    <arg name="laser_q"   default="0 0 0 1"/>   <!-- without rotation -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="laser_tf" args="$(arg laser_xyz) $(arg laser_q) base_link $(arg frame_id)"/>
+    <arg name="laser_xyz"  default="0 0 0.15"/>   <!-- 15 cm -->
+    <arg name="laser_rpy"  default="0 0 0"/>      <!-- sem rotação -->
+    
+    <node pkg="tf" type="static_transform_publisher" name="laser_tf"
+          args="$(arg laser_xyz) $(arg laser_rpy) base_link $(arg frame_id) 100"/>
     
 </launch>
