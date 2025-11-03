@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="serial_port" default="/dev/serial0"/>
+    <arg name="serial_port" default="/dev/ttyAMA0"/>
     <arg name="baud_rate"  default="230400"/>
     <arg name="frame_id"   default="laser"/>
 
