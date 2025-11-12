@@ -2,6 +2,16 @@
 
 PiPicoDriver::PiPicoDriver(ros::NodeHandle& nh_) : nh(nh_) {
 
+  // ---------------------- Init structs --------------------
+  messageToSend.v_d = 0.0;
+  messageToSend.w_d = 0.0;
+  messageToSend.pick_box = false;
+  
+  messageToReceive.odom_pos.x = 0.0;
+  messageToReceive.odom_pos.y = 0.0;
+  messageToReceive.odom_pos.theta = 0.0;
+  messageToReceive.box_detection = false;
+
   // ----------------------- ROS init -----------------------
   // -> Subs
   velSub = nh.subscribe("/cmd_vel", 10, &PiPicoDriver::velCallBack, this);
