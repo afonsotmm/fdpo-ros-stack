@@ -12,8 +12,16 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     target_frame = "base_link";
 
     nh.param("max_match_dist", maxMatchDist, 0.2);
+    nh.param<std::string>("input_topic_type", input_topic_type, "laser_scan");
 
-    sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
+    // Subscribe based on input type
+    if (input_topic_type == "point_cloud") {
+        pointCloudSub = nh.subscribe("laser_scan_point_cloud", 10, &BeaconDetector::processPointCloud, this);
+        ROS_INFO("BeaconDetector subscribed to PointCloud topic: laser_scan_point_cloud");
+    } else {
+        sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
+        ROS_INFO("BeaconDetector subscribed to LaserScan topic: /base_scan");
+    }
 
     beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_estimation", 1);
 
@@ -355,6 +363,37 @@ void BeaconDetector::processSensorData(const sensor_msgs::LaserScan::ConstPtr& s
     matchBeaconsToClusters();
     beaconsCentroidCompensation();
     publishBeaconsEstimation(scan->header);
+
+    #ifdef RVIZ_VISUALIZATION
+        publishBeaconAssociations();
+    #endif
+
+}
+
+void BeaconDetector::processPointCloud(const sensor_msgs::PointCloud::ConstPtr& cloud) {
+
+    // Convert PointCloud (v1) to PointCloud2
+    sensor_msgs::convertPointCloudToPointCloud2(*cloud, pointCloud);
+
+    try {
+
+        sensor_msgs::PointCloud2 pointCloud_targetFrame;
+        tf_buffer->transform(pointCloud, pointCloud_targetFrame, target_frame, ros::Duration(1.0));
+        pointCloud = std::move(pointCloud_targetFrame);
+
+    } catch (const tf2::TransformException& ex) {
+
+        ROS_WARN_THROTTLE(1.0, "Failed to transform point cloud data: %s", ex.what());
+        return;
+    }
+
+    std::vector<Point> dataPoints;
+    pointCloud2XY(pointCloud, dataPoints);
+    dataClustering(dataPoints);
+    updateRobotFrameBeacons(cloud->header.stamp);
+    matchBeaconsToClusters();
+    beaconsCentroidCompensation();
+    publishBeaconsEstimation(cloud->header);
 
     #ifdef RVIZ_VISUALIZATION
         publishBeaconAssociations();

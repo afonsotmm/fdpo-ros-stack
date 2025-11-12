@@ -60,7 +60,6 @@ roslaunch conf wake_up_fdpo.launch use_rviz:=true
   * `laser_geometry`
   * `message_generation`, `message_runtime`
   * `dynamic_reconfigure`
-  * `pointcloud_to_laserscan` (for YDLidar X4 conversion)
   * Visualization: `rviz`, `visualization_msgs`
 * **Simulation:** Stage (`stage_ros`)
 * **Hardware (real robot):**
@@ -73,8 +72,7 @@ roslaunch conf wake_up_fdpo.launch use_rviz:=true
 > Tip: install missing packages via `apt`:
 > ```bash
 > sudo apt install ros-noetic-tf2-ros ros-noetic-laser-geometry \
->   ros-noetic-dynamic-reconfigure ros-noetic-stage-ros \
->   ros-noetic-pointcloud-to-laserscan
+>   ros-noetic-dynamic-reconfigure ros-noetic-stage-ros
 > ```
 
 ---
@@ -156,9 +154,9 @@ The system supports two LiDAR drivers that can be selected at launch time:
 YDLidar X4 driver. Handles serial communication via `/dev/ttyUSB0` (USB), publishes `sensor_msgs/LaserScan`.
 
 **Serial:** `/dev/ttyUSB0` @ 128000 baud  
-**Outputs:** `laser_scan_point_cloud` (sensor_msgs/PointCloud) → converted to `/base_scan` (sensor_msgs/LaserScan)
+**Outputs:** `laser_scan_point_cloud` (sensor_msgs/PointCloud)
 
-**Note:** The YDLidar driver publishes PointCloud format, which is automatically converted to LaserScan via a custom `pointcloud_converter` node (PointCloud→PointCloud2) and the standard `pointcloud_to_laserscan` node (PointCloud2→LaserScan) for compatibility with the beacon detector.
+**Note:** The YDLidar driver publishes PointCloud format, which is processed directly by the beacon detector (no conversion needed).
 
 #### b) `hls_lfcd_lds_driver`
 
@@ -194,14 +192,17 @@ The localizer stack provides LiDAR‑based beacon detection and EKF fusion. It i
 
 #### b) `beacon_detector_node`
 
-* **Subscribe:** `/base_scan` (`sensor_msgs/LaserScan`).  
+**Input flexibility:** Supports two input types (configured automatically based on LiDAR driver):
+* **LaserScan mode** (`input_topic_type: laser_scan`): subscribes to `/base_scan` (`sensor_msgs/LaserScan`) — used with HLS-LFCD2
+* **PointCloud mode** (`input_topic_type: point_cloud`): subscribes to `laser_scan_point_cloud` (`sensor_msgs/PointCloud`) — used with YDLidar X4
+
 * **Publish:**
   * `beacon_estimation` (`localizer/BeaconMatch`) — beacon detection and matching results.
   * `dbscan_markers` (`visualization_msgs/MarkerArray`) — raw clustered points + centroids.
   * `beacons_map_markers` (`visualization_msgs/MarkerArray`, latched) — fixed beacons in robot frame.
 
 **Processing pipeline:**
-1. Convert `LaserScan` → 2D points.  
+1. Convert input data → 2D points (from LaserScan or PointCloud).  
 2. **DBSCAN** clustering with `eps` and `minPoints`.  
 3. **Nearest‑neighbour matching** between cluster centroids and beacon map.  
 4. **Centroid bias compensation** (see equations below).  
@@ -391,9 +392,11 @@ Node `odoms_to_paths_node` converts odometry into `nav_msgs/Path` for RViz visua
 
 #### b) `pointcloud_converter`
 
-Simple Python node that converts `sensor_msgs/PointCloud` (v1) to `sensor_msgs/PointCloud2`. Used in the YDLidar X4 pipeline to enable compatibility with `pointcloud_to_laserscan`.
+*(Currently unused - kept for potential future use)*
 
-**Purpose:** The YDLidar driver outputs PointCloud (v1), but modern conversion tools expect PointCloud2 format. This lightweight converter bridges the gap.
+Simple Python node that converts `sensor_msgs/PointCloud` (v1) to `sensor_msgs/PointCloud2`. 
+
+**Note:** The beacon detector now accepts PointCloud directly, so this converter is not needed in the current pipeline.
 
 ---
 

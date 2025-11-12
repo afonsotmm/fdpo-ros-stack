@@ -1,6 +1,9 @@
 <launch>
+  <arg name="input_topic_type" default="laser_scan" doc="Input type: 'laser_scan' or 'point_cloud'"/>
+  
   <node name="beacon_detector_node" pkg="localizer" type="beacon_detector_node" output="screen">
     <rosparam file="$(find conf)/launch/navigation/localizer/beacon_detector/beacons_info.yaml" command="load"/>
     <rosparam file="$(find conf)/launch/navigation/localizer/beacon_detector/matching_params.yaml" command="load"/>
+    <param name="input_topic_type" value="$(arg input_topic_type)"/>
   </node>
 </launch>

@@ -15,7 +15,9 @@
 	</include>
 
 	<!-- Navigation: Localização e Controle de Navegação -->
-	<include if="$(arg use_navigation)" file="$(find conf)/system/navigation.xml"/>
+	<include if="$(arg use_navigation)" file="$(find conf)/system/navigation.xml">
+		<arg name="lidar_driver" value="$(arg lidar_driver)"/>
+	</include>
     
 	<!-- HMI: Interface Humano-Máquina (Mapa, RViz, etc) -->
 	<include if="$(arg use_hmi)" file="$(find conf)/system/hmi.xml">
