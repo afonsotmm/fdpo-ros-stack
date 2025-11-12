@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pointcloud_converter</name>
+  <version>1.0.0</version>
+  <description>Simple utility to convert PointCloud to PointCloud2</description>
+
+  <maintainer email="user@todo.todo">FDPO Team</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+  </export>
+</package>
+

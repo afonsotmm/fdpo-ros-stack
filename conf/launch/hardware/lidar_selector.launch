@@ -17,6 +17,8 @@
             <param name="port"      value="$(arg serial_port)"/>
             <param name="baud_rate" value="$(arg baud_rate)"/>
             <param name="frame_id"  value="$(arg frame_id)"/>
+            <!-- Publicar em /base_scan para compatibilidade com beacon_detector -->
+            <remap from="scan" to="/base_scan"/>
         </node>
     </group>
 
@@ -43,6 +45,28 @@
             <param name="laser_pose_roll" value="0.0"/>
             <param name="dist_min" value="0.12"/>
             <param name="dist_max" value="10.0"/>
+        </node>
+        
+        <!-- Converter PointCloud (v1) para PointCloud2 -->
+        <node pkg="pointcloud_converter" type="pointcloud_to_pointcloud2.py" name="pointcloud_converter" output="screen">
+            <param name="input_topic" value="laser_scan_point_cloud"/>
+            <param name="output_topic" value="laser_scan_point_cloud2"/>
+        </node>
+        
+        <!-- Converter PointCloud2 para LaserScan para compatibilidade com beacon_detector -->
+        <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan" output="screen">
+            <remap from="cloud_in" to="laser_scan_point_cloud2"/>
+            <remap from="scan" to="/base_scan"/>
+            <param name="min_height" value="-0.5"/>
+            <param name="max_height" value="0.5"/>
+            <param name="angle_min" value="-3.14159"/>
+            <param name="angle_max" value="3.14159"/>
+            <param name="angle_increment" value="0.0087"/>
+            <param name="scan_time" value="0.1"/>
+            <param name="range_min" value="0.12"/>
+            <param name="range_max" value="10.0"/>
+            <param name="use_inf" value="true"/>
+            <param name="target_frame" value="$(arg frame_id)"/>
         </node>
     </group>
 

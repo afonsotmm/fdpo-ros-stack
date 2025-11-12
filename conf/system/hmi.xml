@@ -2,6 +2,7 @@
 
     <arg name="map_file" default="$(find conf)/launch/hmi/maps/factory_map.yaml"/>
     <arg name="rviz_config" default="$(find conf)/launch/hmi/fdpo_simulation.rviz"/>
+    <arg name="use_rviz" default="false"/>
 
     <include file="$(find conf)/launch/hmi/fdpo_map_server.launch">
         <arg name="map_file" value="$(arg map_file)"/>
@@ -11,7 +12,7 @@
 
     <include file="$(find conf)/launch/hmi/fdpo_reconfigure_rqt.launch"/>
 
-    <include file="$(find conf)/launch/hmi/fdpo_rviz.launch">
+    <include if="$(arg use_rviz)" file="$(find conf)/launch/hmi/fdpo_rviz.launch">
         <arg name="rviz_config" value="$(arg rviz_config)"/>
     </include>
 

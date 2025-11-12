@@ -42,6 +42,9 @@ roslaunch conf wake_up_fdpo.launch
 
 # HLS-LFCD2
 roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
+
+# Com RViz (opcional)
+roslaunch conf wake_up_fdpo.launch use_rviz:=true
 ```
 
 >  **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
@@ -57,6 +60,7 @@ roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
   * `laser_geometry`
   * `message_generation`, `message_runtime`
   * `dynamic_reconfigure`
+  * `pointcloud_to_laserscan` (for YDLidar X4 conversion)
   * Visualization: `rviz`, `visualization_msgs`
 * **Simulation:** Stage (`stage_ros`)
 * **Hardware (real robot):**
@@ -66,7 +70,12 @@ roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
   * **Raspberry Pi 4** running ROS and this stack (high‑level)
   * **Raspberry Pi Pico** handling actuator control (low‑level)
 
-> Tip: install missing packages via `apt` (e.g. `sudo apt install ros-noetic-tf2-ros ros-noetic-laser-geometry ros-noetic-dynamic-reconfigure ros-noetic-stage-ros`).
+> Tip: install missing packages via `apt`:
+> ```bash
+> sudo apt install ros-noetic-tf2-ros ros-noetic-laser-geometry \
+>   ros-noetic-dynamic-reconfigure ros-noetic-stage-ros \
+>   ros-noetic-pointcloud-to-laserscan
+> ```
 
 ---
 
@@ -98,7 +107,8 @@ FDPO4.0_2025/
 │  ├─ launch/                        # Simulation launch files
 │  └─ hmi/                           # RViz configs for simulation
 ├─ utilities_stack/                  # Utility tools
-│  └─ path_log/                      # Odometry-to-path logging node
+│  ├─ path_log/                      # Odometry-to-path logging node
+│  └─ pointcloud_converter/          # PointCloud to PointCloud2 converter
 ├─ CMakeLists.txt                    # Top-level build system
 └─ README.md                         # Project documentation
 ```
@@ -146,14 +156,16 @@ The system supports two LiDAR drivers that can be selected at launch time:
 YDLidar X4 driver. Handles serial communication via `/dev/ttyUSB0` (USB), publishes `sensor_msgs/LaserScan`.
 
 **Serial:** `/dev/ttyUSB0` @ 128000 baud  
-**Outputs:** `/scan` topic
+**Outputs:** `laser_scan_point_cloud` (sensor_msgs/PointCloud) → converted to `/base_scan` (sensor_msgs/LaserScan)
+
+**Note:** The YDLidar driver publishes PointCloud format, which is automatically converted to LaserScan via a custom `pointcloud_converter` node (PointCloud→PointCloud2) and the standard `pointcloud_to_laserscan` node (PointCloud2→LaserScan) for compatibility with the beacon detector.
 
 #### b) `hls_lfcd_lds_driver`
 
 HLDS HLS-LFCD2 driver (LDS‑01/02). Handles serial communication via `/dev/ttyAMA0` (Raspberry Pi GPIO UART), publishes `sensor_msgs/LaserScan`.
 
 **Serial:** `/dev/ttyAMA0` @ 230400 baud  
-**Outputs:** `/scan` topic
+**Outputs:** `scan` (sensor_msgs/LaserScan) → remapped to `/base_scan`
 
 **Selection:** Use `lidar_driver:=hlds` argument to switch from default YDLidar X4 to HLS-LFCD2 (see Quick Start section).
 
@@ -371,9 +383,17 @@ $$
 
 ---
 
-### 7) `utilities_stack/path_log`
+### 7) `utilities_stack`
+
+#### a) `path_log`
 
 Node `odoms_to_paths_node` converts odometry into `nav_msgs/Path` for RViz visualization.
+
+#### b) `pointcloud_converter`
+
+Simple Python node that converts `sensor_msgs/PointCloud` (v1) to `sensor_msgs/PointCloud2`. Used in the YDLidar X4 pipeline to enable compatibility with `pointcloud_to_laserscan`.
+
+**Purpose:** The YDLidar driver outputs PointCloud (v1), but modern conversion tools expect PointCloud2 format. This lightweight converter bridges the gap.
 
 ---
 
@@ -401,11 +421,17 @@ roslaunch navigation_controller run_navigation_controller.launch
 
 E) **Real Robot Bring‑up**  
 ```bash
-# With YDLidar X4 (default)
+# With YDLidar X4 (default, without RViz)
 roslaunch conf wake_up_fdpo.launch
 
 # With HLS-LFCD2
 roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
+
+# Enable RViz for visualization
+roslaunch conf wake_up_fdpo.launch use_rviz:=true
+
+# Combine options
+roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds use_rviz:=true
 ```
 
 ---
