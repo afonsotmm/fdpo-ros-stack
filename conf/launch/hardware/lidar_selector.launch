@@ -1,0 +1,54 @@
+<launch>
+
+    <!-- Argumento para escolher o driver: "hlds" ou "ydlidar" -->
+    <arg name="lidar_driver" default="ydlidar"/>
+    
+    <!-- Frame ID comum para ambos os drivers -->
+    <arg name="frame_id" default="laser"/>
+
+    <!-- ============================================ -->
+    <!-- Driver HLS-LFCD2 -->
+    <!-- ============================================ -->
+    <group if="$(eval lidar_driver == 'hlds')">
+        <arg name="serial_port" default="/dev/ttyAMA0"/>  <!-- Raspberry Pi GPIO UART -->
+        <arg name="baud_rate"  default="230400"/>
+
+        <node pkg="hls_lfcd_lds_driver" type="hlds_laser_publisher" name="hlds_laser" output="screen">
+            <param name="port"      value="$(arg serial_port)"/>
+            <param name="baud_rate" value="$(arg baud_rate)"/>
+            <param name="frame_id"  value="$(arg frame_id)"/>
+        </node>
+    </group>
+
+    <!-- ============================================ -->
+    <!-- Driver YDLidar X4 -->
+    <!-- ============================================ -->
+    <group if="$(eval lidar_driver == 'ydlidar')">
+        <arg name="serial_port_ydlidar" default="/dev/ttyUSB0"/>
+        <arg name="baud_rate_ydlidar" default="128000"/>
+        
+        <node pkg="sdpo_driver_laser_2d" type="sdpo_driver_laser_2d_node"
+            name="sdpo_driver_laser_2d" clear_params="true" output="screen">
+            <!-- Carregar configuração base -->
+            <rosparam command="load" subst_value="True"
+                file="$(find sdpo_driver_laser_2d)/config/sdpo_driver_laser_2d_YDLIDARX4.yaml"/>
+            
+            <!-- Sobrescrever parâmetros para compatibilidade FDPO -->
+            <param name="serial_port_name" value="$(arg serial_port_ydlidar)"/>
+            <param name="baud_rate" value="$(arg baud_rate_ydlidar)"/>
+            <param name="base_frame_id" value="base_link"/>
+            <param name="laser_frame_id" value="$(arg frame_id)"/>
+        </node>
+    </group>
+
+    <!-- ============================================ -->
+    <!-- TF fixa base_link -> laser -->
+    <!-- ============================================ -->
+    <arg name="laser_xyz"  default="0 0 0.15"/>   <!-- 15 cm -->
+    <arg name="laser_rpy"  default="0 0 0"/>      <!-- sem rotação -->
+    
+    <node pkg="tf" type="static_transform_publisher" name="laser_tf"
+          args="$(arg laser_xyz) $(arg laser_rpy) base_link $(arg frame_id) 100"/>
+
+</launch>
+

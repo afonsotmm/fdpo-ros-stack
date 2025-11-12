@@ -13,8 +13,12 @@ PiPicoDriver::PiPicoDriver(ros::NodeHandle& nh_) : nh(nh_) {
   commTimer = nh.createTimer(ros::Duration(0.02), &PiPicoDriver::commTick, this);
 
   // ---------------------- Serial init ---------------------
+  std::string serial_port;
+  nh.param<std::string>("serial_port", serial_port, "/dev/ttyACM0");
+  ROS_INFO("[PiPicoDriver] Usando porta serial: %s", serial_port.c_str());
+  
   serial_fd_ = -1;
-  startSerial("/dev/ttyACM0");
+  startSerial(serial_port);
   
 }
 

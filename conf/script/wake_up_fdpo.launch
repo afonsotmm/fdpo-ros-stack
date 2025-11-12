@@ -2,12 +2,16 @@
 
 	<!-- Argumentos configuráveis -->
 	<arg name="map_file" default="$(find conf)/launch/hmi/maps/factory_map.yaml"/>
+	<arg name="rviz_config" default="$(find conf)/launch/hmi/fdpo_simulation.rviz"/>
+	<arg name="lidar_driver" default="ydlidar" doc="Escolha o driver de LiDAR: 'hlds' ou 'ydlidar'"/>
 	<arg name="use_hal" default="true"/>
 	<arg name="use_navigation" default="true"/>
 	<arg name="use_hmi" default="true"/>
 
 	<!-- HAL: Hardware Abstraction Layer (LiDAR, etc) -->
-	<include if="$(arg use_hal)" file="$(find conf)/system/hal.xml"/>
+	<include if="$(arg use_hal)" file="$(find conf)/system/hal.xml">
+		<arg name="lidar_driver" value="$(arg lidar_driver)"/>
+	</include>
 
 	<!-- Navigation: Localização e Controle de Navegação -->
 	<include if="$(arg use_navigation)" file="$(find conf)/system/navigation.xml"/>
@@ -15,6 +19,7 @@
 	<!-- HMI: Interface Humano-Máquina (Mapa, RViz, etc) -->
 	<include if="$(arg use_hmi)" file="$(find conf)/system/hmi.xml">
 		<arg name="map_file" value="$(arg map_file)"/>
+		<arg name="rviz_config" value="$(arg rviz_config)"/>
 	</include>
 
 </launch>

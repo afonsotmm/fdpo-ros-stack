@@ -29,7 +29,19 @@ roslaunch simulation_stage run_sim_stage.launch
 Brings up drivers, navigation, and HMI through `conf/`.
 
 ```bash
-roslaunch conf/script/wake_up_fdpo.launch
+roslaunch conf wake_up_fdpo.launch
+```
+
+#### LiDAR Driver Selection
+
+The system supports two LiDAR drivers. By default, it uses the YDLidar X4 driver:
+
+```bash
+# YDLidar X4 (default)
+roslaunch conf wake_up_fdpo.launch
+
+# HLS-LFCD2
+roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
 ```
 
 >  **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
@@ -48,7 +60,9 @@ roslaunch conf/script/wake_up_fdpo.launch
   * Visualization: `rviz`, `visualization_msgs`
 * **Simulation:** Stage (`stage_ros`)
 * **Hardware (real robot):**
-  * HLDS HLS‑LFCD LiDAR (LDS‑01/02) — *driver included in this repository*.
+  * LiDAR (choose one):
+    * HLDS HLS‑LFCD2 (LDS‑01/02) — *driver included*
+    * YDLidar X4 — *driver included via 5dpo_driver_laser_2d*
   * **Raspberry Pi 4** running ROS and this stack (high‑level)
   * **Raspberry Pi Pico** handling actuator control (low‑level)
 
@@ -63,7 +77,10 @@ FDPO4.0_2025/
 ├─ conf/                             # Centralized launch wrappers & parameters
 │  └─ script/wake_up_fdpo.launch     # Full bring-up of the real robot
 ├─ drivers_stack/                    # Hardware drivers
-│  └─ hls_lfcd_lds_driver/           # HLDS LiDAR driver (LDS-01/02)
+│  ├─ lidar_drivers/                 # LiDAR drivers
+│  │  ├─ hls_lfcd_lds_driver/        # HLDS HLS-LFCD2 driver (LDS-01/02)
+│  │  └─ ydlidar_x4_drivers/         # YDLidar X4 driver (5dpo_driver_laser_2d)
+│  └─ pi_pico_driver/                # Raspberry Pi Pico communication driver
 ├─ navigation_stack/                 # Localization and navigation controller
 │  ├─ localizer/                     # Beacon-based localization with EKF
 │  │  ├─ msg/                        # Custom message definitions
@@ -120,18 +137,40 @@ Centralized launch wrappers and parameter files. Instead of launching packages i
 
 ---
 
-### 2) `drivers_stack/hls_lfcd_lds_driver`
+### 2) `drivers_stack/lidar_drivers`
 
-Custom integration of the HLDS LiDAR driver (LDS‑01/02). Handles serial communication, publishes `sensor_msgs/LaserScan`.
+The system supports two LiDAR drivers that can be selected at launch time:
 
-**Inputs:** serial data from LiDAR.  
-**Outputs:** `/scan` topic.
+#### a) `ydlidar_x4_drivers` (5dpo_driver_laser_2d) — **default**
+
+YDLidar X4 driver. Handles serial communication via `/dev/ttyUSB0` (USB), publishes `sensor_msgs/LaserScan`.
+
+**Serial:** `/dev/ttyUSB0` @ 128000 baud  
+**Outputs:** `/scan` topic
+
+#### b) `hls_lfcd_lds_driver`
+
+HLDS HLS-LFCD2 driver (LDS‑01/02). Handles serial communication via `/dev/ttyAMA0` (Raspberry Pi GPIO UART), publishes `sensor_msgs/LaserScan`.
+
+**Serial:** `/dev/ttyAMA0` @ 230400 baud  
+**Outputs:** `/scan` topic
+
+**Selection:** Use `lidar_driver:=hlds` argument to switch from default YDLidar X4 to HLS-LFCD2 (see Quick Start section).
 
 **Importance:** entry point for environment perception.
 
 ---
 
-### 3) `navigation_stack/localizer`
+### 3) `drivers_stack/pi_pico_driver`
+
+Driver node for communication between the Raspberry Pi 4 (high-level ROS control) and the Raspberry Pi Pico (low-level actuator control).
+
+**Inputs:** `/cmd_vel` (geometry_msgs/Twist)  
+**Outputs:** `/odom` (nav_msgs/Odometry)
+
+---
+
+### 4) `navigation_stack/localizer`
 
 The localizer stack provides LiDAR‑based beacon detection and EKF fusion. It is composed of two nodes: **`beacon_detector_node`** and **`localizer_node` (EKF)**, and three custom messages.
 
@@ -265,7 +304,7 @@ $$
 
 ---
 
-### 4) `navigation_stack/navigation_controller`
+### 5) `navigation_stack/navigation_controller`
 
 Implements two FSM layers and exposes a service API for control.
 
@@ -325,14 +364,14 @@ $$
 
 ---
 
-### 5) `simulation_stage`
+### 6) `simulation_stage`
 
 * `factory_floor.world`: Stage world map  
 * `run_sim_stage.launch`: launches Stage + stack  
 
 ---
 
-### 6) `utilities_stack/path_log`
+### 7) `utilities_stack/path_log`
 
 Node `odoms_to_paths_node` converts odometry into `nav_msgs/Path` for RViz visualization.
 
@@ -362,7 +401,11 @@ roslaunch navigation_controller run_navigation_controller.launch
 
 E) **Real Robot Bring‑up**  
 ```bash
-roslaunch conf/script/wake_up_fdpo.launch
+# With YDLidar X4 (default)
+roslaunch conf wake_up_fdpo.launch
+
+# With HLS-LFCD2
+roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
 ```
 
 ---
