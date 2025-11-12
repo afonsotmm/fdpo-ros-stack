@@ -29,15 +29,20 @@
         
         <node pkg="sdpo_driver_laser_2d" type="sdpo_driver_laser_2d_node"
             name="sdpo_driver_laser_2d" clear_params="true" output="screen">
-            <!-- Carregar configuração base -->
-            <rosparam command="load" subst_value="True"
-                file="$(find sdpo_driver_laser_2d)/config/sdpo_driver_laser_2d_YDLIDARX4.yaml"/>
-            
-            <!-- Sobrescrever parâmetros para compatibilidade FDPO -->
+            <!-- Parâmetros configurados diretamente para compatibilidade FDPO -->
+            <param name="model" value="ydlidarx4"/>
             <param name="serial_port_name" value="$(arg serial_port_ydlidar)"/>
             <param name="baud_rate" value="$(arg baud_rate_ydlidar)"/>
             <param name="base_frame_id" value="base_link"/>
             <param name="laser_frame_id" value="$(arg frame_id)"/>
+            <param name="laser_pose_x" value="0.0"/>
+            <param name="laser_pose_y" value="0.0"/>
+            <param name="laser_pose_z" value="0.0"/>
+            <param name="laser_pose_yaw" value="0.0"/>
+            <param name="laser_pose_pitch" value="0.0"/>
+            <param name="laser_pose_roll" value="0.0"/>
+            <param name="dist_min" value="0.12"/>
+            <param name="dist_max" value="10.0"/>
         </node>
     </group>
 
