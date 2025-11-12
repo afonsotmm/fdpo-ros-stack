@@ -14,13 +14,15 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
     nh.param("max_match_dist", maxMatchDist, 0.2);
     nh.param<std::string>("input_topic_type", input_topic_type, "laser_scan");
 
+    ROS_INFO("BeaconDetector input_topic_type parameter: '%s'", input_topic_type.c_str());
+
     // Subscribe based on input type
     if (input_topic_type == "point_cloud") {
         pointCloudSub = nh.subscribe("laser_scan_point_cloud", 10, &BeaconDetector::processPointCloud, this);
         ROS_INFO("BeaconDetector subscribed to PointCloud topic: laser_scan_point_cloud");
     } else {
         sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
-        ROS_INFO("BeaconDetector subscribed to LaserScan topic: /base_scan");
+        ROS_INFO("BeaconDetector subscribed to LaserScan topic: /base_scan (input_topic_type='%s')", input_topic_type.c_str());
     }
 
     beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_estimation", 1);
