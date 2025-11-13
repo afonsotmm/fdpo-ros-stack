@@ -27,8 +27,8 @@ BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
 
     beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_estimation", 1);
 
-    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1);
-    beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true); 
+    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1, true);  // latched
+    beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true);  // latched 
     
     loadBeaconsFromParams();
     publishBeaconsInMap();

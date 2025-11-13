@@ -19,8 +19,8 @@ PiPicoDriver::PiPicoDriver(ros::NodeHandle& nh_) : nh(nh_) {
   // -> Pubs
   posePub = nh.advertise<nav_msgs::Odometry>("/odom", 10);
   detectBoxPub = nh.advertise<std_msgs::Bool>("/box_detection", 10);
-  // -> Timer
-  commTimer = nh.createTimer(ros::Duration(0.02), &PiPicoDriver::commTick, this);
+  // -> Timer (100 Hz para evitar watchdog timeout no Pico)
+  commTimer = nh.createTimer(ros::Duration(0.01), &PiPicoDriver::commTick, this);
 
   // ---------------------- Serial init ---------------------
   std::string serial_port;
