@@ -174,8 +174,9 @@ void SdpoDriverLaser2DROS::pubLaserData() {
   msg.header.stamp = ros::Time::now();
   msg.points.resize(laser_->data_count);
   for(size_t i = 0; i < laser_->data_count; i++) {
+    // Inverter X para corrigir orientação do YDLidar
     msg.points.at(i).x =
-        laser_->dist_data[i] * cos(laser_->ang_data[i]);
+        -laser_->dist_data[i] * cos(laser_->ang_data[i]);
     msg.points.at(i).y =
         laser_->dist_data[i] * sin(laser_->ang_data[i]);
     msg.points.at(i).z = 0;
