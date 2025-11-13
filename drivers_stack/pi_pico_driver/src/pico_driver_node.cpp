@@ -175,50 +175,58 @@ std::string PiPicoDriver::syncCall(const std::string& cmd, int timeout_ms) {
 }
 
 void PiPicoDriver::decodeMsg(const std::string& msg) {
-  if (msg.rfind("POS:", 0) == 0) {
+  // Procurar por "POS:" em qualquer posição da mensagem (não só no início)
+  size_t pos_idx = msg.find("POS:");
+  if (pos_idx != std::string::npos) {
+    // Extrair a substring a partir de "POS:"
+    std::string pos_part = msg.substr(pos_idx);
+    
     double x=0, y=0, theta=0;
     int tof = 0;
 
     // Tenta com TOF primeiro
-    int n = std::sscanf(msg.c_str(), "POS: %lf, %lf, %lf, TOF: %d", &x, &y, &theta, &tof);
+    int n = std::sscanf(pos_part.c_str(), "POS: %lf, %lf, %lf, TOF: %d", &x, &y, &theta, &tof);
     if (n < 3) {
       // fallback: só POS
-      n = std::sscanf(msg.c_str(), "POS: %lf, %lf, %lf", &x, &y, &theta);
+      n = std::sscanf(pos_part.c_str(), "POS: %lf, %lf, %lf", &x, &y, &theta);
       tof = messageToReceive.box_detection ? 1 : 0; // mantém anterior
     }
     if (n >= 3) {
       messageToReceive.odom_pos = {x, y, theta};
       pubOdom();
-      if (msg.find("TOF:") != std::string::npos) {
+      if (pos_part.find("TOF:") != std::string::npos) {
         messageToReceive.box_detection = (tof != 0);
         pubBoxDetection();
       }
       return;
     }
-    ROS_WARN("Erro ao fazer parse da mensagem POS: %s", msg.c_str());
+    ROS_WARN_THROTTLE(5.0, "Erro ao fazer parse da mensagem POS: %s", pos_part.c_str());
     return;
   }
 
-  if (msg.rfind("TOF:", 0) == 0) {
-    // (mantém este ramo se a Pico por vezes enviar só TOF)
-    std::string data = msg.substr(4);
-    data.erase(0, data.find_first_not_of(" \t"));
-    data.erase(data.find_last_not_of(" \t") + 1);
+  size_t tof_idx = msg.find("TOF:");
+  if (tof_idx != std::string::npos) {
+    // Extrair só a parte TOF
+    std::string tof_part = msg.substr(tof_idx + 4);
+    tof_part.erase(0, tof_part.find_first_not_of(" \t"));
+    
     int flag = 0;
-    std::istringstream iss(data);
+    std::istringstream iss(tof_part);
     if (iss >> flag) {
       messageToReceive.box_detection = (flag != 0);
       pubBoxDetection();
-    } else {
-      ROS_WARN("Erro ao fazer parse da mensagem TOF: %s", msg.c_str());
+      return;
     }
-    return;
   }
 
-  // Ignora ruído opcionalmente:
+  // Ignora ACK e mensagens vazias/curtas
   if (msg.rfind("ACK:", 0) == 0) return;
+  if (msg.empty() || msg.length() < 3) return;
+  
+  // Mensagens de debug do Pico (longas) - ignorar silenciosamente se não em modo debug
+  if (!debug_comm_ && msg.find("dbg") != std::string::npos) return;
 
-  ROS_WARN("Mensagem desconhecida: %s", msg.c_str());
+  ROS_WARN_THROTTLE(10.0, "Mensagem desconhecida (mostrando 1 a cada 10s): %s", msg.substr(0, 80).c_str());
 }
 
 void PiPicoDriver::commTick(const ros::TimerEvent&) {

@@ -6,7 +6,7 @@
 int main(int argc, char** argv) {
 
     ros::init(argc, argv, "beacon_detector_node");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");  // NodeHandle privado para ler parâmetros do nó
 
     BeaconDetector detector(nh);
     ROS_INFO("Beacon detector initialization...");

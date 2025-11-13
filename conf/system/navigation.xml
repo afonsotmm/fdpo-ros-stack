@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="lidar_driver" default="hlds" doc="Tipo de driver LiDAR: 'hlds' ou 'ydlidar'"/>
+  <arg name="lidar_driver" default="ydlidar" doc="Tipo de driver LiDAR: 'hlds' ou 'ydlidar'"/>
 
   <include file="$(find conf)/launch/navigation/navigation_controller/run_navigation_controller.launch"/>
   
