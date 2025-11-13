@@ -36,11 +36,12 @@
 class BeaconDetector {
 
     public:
-        BeaconDetector(ros::NodeHandle& nh);
+        BeaconDetector(ros::NodeHandle& nh, ros::NodeHandle& nh_priv);
         virtual ~BeaconDetector();
 
     private:
         ros::NodeHandle& nh;
+        ros::NodeHandle& nh_priv;
 
         std::vector<Cluster> clusters;
         std::vector<Beacon> beacons_globalFrame;

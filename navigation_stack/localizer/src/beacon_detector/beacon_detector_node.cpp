@@ -4,31 +4,32 @@
 //                               BeaconDetector Class 
 // ---------------------------------------------------------------------------------------
 
-BeaconDetector::BeaconDetector(ros::NodeHandle& nh) : nh(nh) {
+BeaconDetector::BeaconDetector(ros::NodeHandle& nh, ros::NodeHandle& nh_priv) : nh(nh), nh_priv(nh_priv) {
 
 	tf_buffer = new tf2_ros::Buffer();
 	tf_listener = new tf2_ros::TransformListener(*tf_buffer);
 
     target_frame = "base_link";
 
-    nh.param("max_match_dist", maxMatchDist, 0.2);
-    nh.param<std::string>("input_topic_type", input_topic_type, "laser_scan");
+    // Ler parâmetros do namespace privado
+    nh_priv.param("max_match_dist", maxMatchDist, 0.2);
+    nh_priv.param<std::string>("input_topic_type", input_topic_type, "laser_scan");
 
     ROS_INFO("BeaconDetector input_topic_type parameter: '%s'", input_topic_type.c_str());
 
-    // Subscribe based on input type
+    // Subscribe usando NodeHandle público (tópicos globais com "/" para absoluto)
     if (input_topic_type == "point_cloud") {
-        pointCloudSub = nh.subscribe("laser_scan_point_cloud", 10, &BeaconDetector::processPointCloud, this);
-        ROS_INFO("BeaconDetector subscribed to PointCloud topic: laser_scan_point_cloud");
+        pointCloudSub = nh.subscribe("/laser_scan_point_cloud", 10, &BeaconDetector::processPointCloud, this);
+        ROS_INFO("BeaconDetector subscribed to PointCloud topic: /laser_scan_point_cloud");
     } else {
         sensorDataSub = nh.subscribe("/base_scan", 10, &BeaconDetector::processSensorData, this);
-        ROS_INFO("BeaconDetector subscribed to LaserScan topic: /base_scan (input_topic_type='%s')", input_topic_type.c_str());
+        ROS_INFO("BeaconDetector subscribed to LaserScan topic: /base_scan");
     }
 
-    beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("beacon_estimation", 1);
-
-    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("dbscan_markers", 1, true);  // latched
-    beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("beacons_map_markers", 1, true);  // latched 
+    // Publicar usando NodeHandle público (tópicos globais com "/" para absoluto)
+    beaconEstimation_pub = nh.advertise<localizer::BeaconMatch>("/beacon_estimation", 1);
+    markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/dbscan_markers", 1, true);  // latched
+    beacons_map_pub_  = nh.advertise<visualization_msgs::MarkerArray>("/beacons_map_markers", 1, true);  // latched 
     
     loadBeaconsFromParams();
     publishBeaconsInMap();
