@@ -5,10 +5,18 @@ LocalizerNode::LocalizerNode(ros::NodeHandle& nh) : nh(nh), tf_buffer(ros::Durat
     loadBeaconsFromParams();
     loadEKFParams();
 
-    // Pos. inicial
-    X_state(0) = 0.0;
-    X_state(1) = 0.0;
-    X_state(2) = 0.0;
+    // Pos. inicial (configurável via parâmetros)
+    double init_x, init_y, init_theta;
+    nh.param("ekf_params/initial_pose/x", init_x, 0.0);
+    nh.param("ekf_params/initial_pose/y", init_y, 0.0);
+    nh.param("ekf_params/initial_pose/theta", init_theta, 0.0);
+    
+    X_state(0) = init_x;
+    X_state(1) = init_y;
+    X_state(2) = init_theta;
+    
+    ROS_INFO("[LocalizerNode] Initial pose: x=%.3f, y=%.3f, theta=%.3f rad (%.1f°)", 
+             init_x, init_y, init_theta, init_theta * 180.0 / M_PI);
     
     odometry_sub = nh.subscribe("/odom", 10, &LocalizerNode::ekf_predict, this);
     beacon_sub = nh.subscribe("/beacon_estimation", 10, &LocalizerNode::ekf_update, this);

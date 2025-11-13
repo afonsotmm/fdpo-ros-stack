@@ -2,6 +2,14 @@
 # Configuration of covariance matrices for the Extended Kalman Filter
 
 ekf_params:
+  # Initial pose in map frame
+  # Map frame: origin at center (marker 13), +X=right, +Y=up
+  # Robot orientation: theta=90° (1.5708 rad) means facing up (+Y direction)
+  initial_pose:
+    x: -0.695            # -695mm (left of center)
+    y: -0.355            # -355mm (below center)
+    theta: 1.5708        # 90° = π/2 rad (facing up/+Y)
+  
   # Initial state covariance matrix P
   # Higher values indicate greater initial uncertainty
   initial_covariance:

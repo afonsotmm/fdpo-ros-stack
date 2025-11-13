@@ -454,6 +454,66 @@ roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds use_rviz:=true
 
 ---
 
+## Coordinate Frames and Transforms
+
+### Frame Hierarchy
+
+The system uses the standard ROS navigation frame structure:
+
+```
+map (global, fixed)
+  └─ odom (locally consistent, drifts over time)
+      └─ base_link (robot center)
+          └─ laser (LiDAR sensor)
+```
+
+### Frame Descriptions
+
+| Frame | Description | Published By |
+|-------|-------------|--------------|
+| **`map`** | Global fixed reference frame | EKF localizer (via TF `map→odom`) |
+| **`odom`** | Odometry frame (locally consistent, accumulates drift) | Pi Pico Driver |
+| **`base_link`** | Robot's base center | Pi Pico Driver (via TF `odom→base_link`) |
+| **`laser`** | LiDAR sensor frame | Static TF publisher (via TF `base_link→laser`) |
+
+### Initial Robot Pose in Map Frame
+
+Configure the robot's starting position in `conf/launch/navigation/localizer/ekf_params.yaml`:
+
+```yaml
+ekf_params:
+  initial_pose:
+    x: 0.0        # meters
+    y: 0.0        # meters
+    theta: 0.0    # radians (0 = facing +X, π/2 = facing +Y)
+```
+### LiDAR Frame Transform (base_link → laser)
+
+The LiDAR position relative to the robot is configured in `conf/launch/hardware/lidar_selector.launch`:
+
+```xml
+<arg name="laser_xyz" default="0 0 0.15"/>   <!-- X Y Z in meters -->
+<arg name="laser_rpy" default="0 0 0"/>      <!-- Roll Pitch Yaw in radians -->
+```
+
+
+### Verify Transforms
+
+```bash
+# Check TF tree structure
+rosrun tf view_frames
+# Generates frames.pdf with visual TF tree
+
+# Check specific transform
+rosrun tf tf_echo base_link laser
+rosrun tf tf_echo map base_link
+
+# Monitor all transforms
+rosrun rqt_tf_tree rqt_tf_tree
+```
+
+---
+
 ## Remote Visualization with RViz
 
 The system runs on a **Raspberry Pi 4 without display**. To visualize all topics (beacons, clusters, laser scans, paths), use **RViz on your PC**.
