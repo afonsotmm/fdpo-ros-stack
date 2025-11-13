@@ -5,6 +5,7 @@
 	<arg name="rviz_config" default="$(find conf)/launch/hmi/fdpo_simulation.rviz"/>
 	<arg name="lidar_driver" default="ydlidar" doc="Escolha o driver de LiDAR: 'hlds' ou 'ydlidar'"/>
 	<arg name="debug_pico_comm" default="false" doc="Mostrar logs de comunicação Pi4-Pico (pode poluir terminal)"/>
+	<arg name="use_ekf" default="true" doc="Usar EKF localizer com beacons (se false, map=odom, só odometria)"/>
 	<arg name="use_hal" default="true"/>
 	<arg name="use_navigation" default="true"/>
 	<arg name="use_hmi" default="true"/>
@@ -19,6 +20,7 @@
 	<!-- Navigation: Localização e Controle de Navegação -->
 	<include if="$(arg use_navigation)" file="$(find conf)/system/navigation.xml">
 		<arg name="lidar_driver" value="$(arg lidar_driver)"/>
+		<arg name="use_ekf" value="$(arg use_ekf)"/>
 	</include>
     
 	<!-- HMI: Interface Humano-Máquina (Mapa, RViz, etc) -->

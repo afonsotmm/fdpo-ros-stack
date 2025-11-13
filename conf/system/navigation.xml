@@ -1,14 +1,22 @@
 <launch>
 
   <arg name="lidar_driver" default="ydlidar" doc="Tipo de driver LiDAR: 'hlds' ou 'ydlidar'"/>
+  <arg name="use_ekf" default="true" doc="Usar EKF localizer (se false, map=odom)"/>
 
   <include file="$(find conf)/launch/navigation/navigation_controller/run_navigation_controller.launch"/>
   
-  <!-- Passar input_topic_type baseado no driver de lidar -->
+  <!-- Beacon Detector (sempre ativo, passa input_topic_type baseado no driver de lidar) -->
   <include file="$(find conf)/launch/navigation/localizer/beacon_detector/run_beacon_detector.launch">
     <arg name="input_topic_type" value="$(eval 'point_cloud' if arg('lidar_driver') == 'ydlidar' else 'laser_scan')"/>
   </include>
 
-  <include file="$(find conf)/launch/navigation/localizer/ekf_localizer/run_ekf_localizer.launch"/>
+  <!-- EKF Localizer -->
+  <include if="$(arg use_ekf)" file="$(find conf)/launch/navigation/localizer/ekf_localizer/run_ekf_localizer.launch"/>
+
+  <!-- without EKF-->
+  <node unless="$(arg use_ekf)" pkg="tf" type="static_transform_publisher" name="map_to_odom_publisher"
+        args="0 0 0 0 0 0 map odom 100"/>
+
+
 
 </launch>
