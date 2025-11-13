@@ -25,7 +25,10 @@ PiPicoDriver::PiPicoDriver(ros::NodeHandle& nh_) : nh(nh_) {
   // ---------------------- Serial init ---------------------
   std::string serial_port;
   nh.param<std::string>("serial_port", serial_port, "/dev/ttyACM0");
+  nh.param("debug_comm", debug_comm_, false);  // Por padrão, logs desativados
+  
   ROS_INFO("[PiPicoDriver] Usando porta serial: %s", serial_port.c_str());
+  ROS_INFO("[PiPicoDriver] Debug communication logs: %s", debug_comm_ ? "ENABLED" : "DISABLED");
   
   serial_fd_ = -1;
   startSerial(serial_port);
@@ -226,13 +229,25 @@ void PiPicoDriver::commTick(const ros::TimerEvent&) {
                                            (messageToSend.pick_box ? "1" : "0"); 
 
   // 2) Send and Wait for response
-  ROS_INFO("Pi4 Message: %s", cmd.c_str());
+  if (debug_comm_) {
+    ROS_INFO("Pi4 Message: %s", cmd.c_str());
+  }
+  
   std::string resp = syncCall(cmd, 50);
-  ROS_INFO("PiPico Message: %s", resp.c_str());
-  ROS_INFO("-------------------");
+  
+  if (debug_comm_) {
+    ROS_INFO("PiPico Message: %s", resp.c_str());
+    ROS_INFO("-------------------");
+  }
+  
   if (resp.empty()) {
     con_state.missed++;
-    if (con_state.missed >= 2) con_state.link_ok = false;
+    if (con_state.missed >= 2) {
+      con_state.link_ok = false;
+      if (!debug_comm_) {
+        ROS_WARN_THROTTLE(5.0, "[PiPicoDriver] Connection lost with Pico!");
+      }
+    }
     return;
   }
   con_state.missed = 0; con_state.link_ok = true;

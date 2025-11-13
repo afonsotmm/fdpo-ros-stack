@@ -45,6 +45,21 @@ roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds
 
 # Com RViz (opcional)
 roslaunch conf wake_up_fdpo.launch use_rviz:=true
+
+# Com logs de debug Pi4-Pico (para diagnóstico)
+roslaunch conf wake_up_fdpo.launch debug_pico_comm:=true
+
+# Combinar várias opções
+roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds debug_pico_comm:=true use_rviz:=true
+```
+
+**Alternar logs Pi4-Pico:**
+```bash
+# Ativar logs
+rosparam set /pico_driver_node/debug_comm true
+
+# Desativar logs
+rosparam set /pico_driver_node/debug_comm false
 ```
 
 >  **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
@@ -436,6 +451,120 @@ roslaunch conf wake_up_fdpo.launch use_rviz:=true
 # Combine options
 roslaunch conf wake_up_fdpo.launch lidar_driver:=hlds use_rviz:=true
 ```
+
+---
+
+## Remote Visualization with RViz
+
+The system runs on a **Raspberry Pi 4 without display**. To visualize all topics (beacons, clusters, laser scans, paths), use **RViz on your PC**.
+
+### Setup
+
+**On your PC (with GUI):**
+
+```bash
+# Set ROS Master URI to point to the Raspberry Pi 4
+export ROS_MASTER_URI=http://10.242.202.243:11311
+export ROS_IP=$(hostname -I | awk '{print $1}')
+
+# Launch RViz
+rviz
+```
+
+### Beacon Detector Visualization Topics
+
+The `beacon_detector_node` publishes the following **latched** topics for visualization:
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/dbscan_markers` | `MarkerArray` | Raw clustered points + centroids (red/green) |
+| `/beacons_map_markers` | `MarkerArray` | Fixed beacon positions in map frame |
+| `/beacon_estimation` | `localizer/BeaconMatch` | Matched beacons data |
+
+### RViz Configuration
+
+**Add these displays in RViz:**
+
+1. **MarkerArray** → Topic: `/dbscan_markers`
+   - Shows DBSCAN clustering results in real-time
+
+2. **MarkerArray** → Topic: `/beacons_map_markers`
+   - Shows known beacon positions (latched, appears immediately)
+
+3. **MarkerArray** → Topic: `/viz_mux/markers`
+   - Shows all beacon associations
+
+4. **Path** → Topics:
+   - `/odom/path` — Odometry path
+   - `/odometry/filtered/path` — EKF filtered path
+
+5. **TF** → Show all transforms
+
+6. **Map** → Topic: `/map` (if map_server is running)
+
+### Check Topics Availability
+
+```bash
+# List all visualization topics
+rostopic list | grep -E "markers|path|scan"
+
+# Check if topics are being published
+rostopic hz /dbscan_markers
+rostopic hz /beacons_map_markers
+
+# Echo a topic to verify data
+rostopic echo /dbscan_markers -n 1
+```
+
+### Troubleshooting Remote Visualization
+
+**Topics not appearing in RViz:**
+```bash
+# On Pi4: Check if topics are being published
+rostopic list
+
+# On PC: Verify ROS connectivity
+rostopic list
+# Should show the same topics as Pi4
+
+# Test network connection
+ping 10.242.202.243
+```
+
+**Markers not showing:**
+- Markers are **latched** now, so they persist even if RViz connects later
+- Make sure the **Fixed Frame** in RViz is set to `map` or `base_link`
+- Check if beacon_detector is receiving LiDAR data: `rostopic hz /laser_scan_point_cloud`
+
+**Quick Verification on Pi4:**
+```bash
+# 1. Verify beacon_detector is subscribed to correct topic
+rosnode info /beacon_detector_node
+# Expected for YDLidar: /laser_scan_point_cloud [sensor_msgs/PointCloud]
+# Expected for HLS-LFCD2: /base_scan [sensor_msgs/LaserScan]
+
+# 2. Check YDLidar is publishing data
+rostopic hz /laser_scan_point_cloud
+rostopic echo /laser_scan_point_cloud -n 1
+
+# 3. Verify beacon_detector is processing and publishing
+rostopic list | grep -E "dbscan|beacons|estimation"
+rostopic hz /beacon_estimation
+
+# 4. Verify markers are available (latched, should return immediately)
+rostopic echo /dbscan_markers -n 1
+rostopic echo /beacons_map_markers -n 1
+
+# 5. If markers are empty, check beacon_detector logs
+rosnode list
+rosnode info /beacon_detector_node
+```
+
+**Important:** After recompiling, always run:
+```bash
+source devel/setup.bash
+```
+Before launching the system!
 
 ---
 

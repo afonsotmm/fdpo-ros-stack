@@ -69,6 +69,7 @@ class PiPicoDriver {
         Communication::ConnectionState con_state{false, 0};
     
         int serial_fd_;
+        bool debug_comm_;  // Parâmetro para mostrar/ocultar logs de comunicação
         void startSerial(const std::string& port);
         
         // Client-Server Communication between Pico & Pi4
