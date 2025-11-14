@@ -40,22 +40,13 @@
             <param name="laser_pose_x" value="0.0"/>
             <param name="laser_pose_y" value="0.0"/>
             <param name="laser_pose_z" value="0.0"/>
-            <param name="laser_pose_yaw" value="0.0"/>
+            <param name="laser_pose_yaw" value="180.0"/>
             <param name="laser_pose_pitch" value="0.0"/>
             <param name="laser_pose_roll" value="0.0"/>
             <param name="dist_min" value="0.12"/>
             <param name="dist_max" value="10.0"/>
         </node>
-    </group>
-
-    <!-- ============================================ -->
-    <!-- TF fixa base_link -> laser -->
-    <!-- ============================================ -->
-    <arg name="laser_xyz"  default="0 0 0.15"/>   <!-- 15 cm -->
-    <arg name="laser_rpy"  default="0 0 0"/>      <!-- c 180 de rotação -->
+    </group> 
     
-    <node pkg="tf" type="static_transform_publisher" name="laser_tf"
-          args="$(arg laser_xyz) $(arg laser_rpy) base_link $(arg frame_id) 100"/>
-
 </launch>
 
