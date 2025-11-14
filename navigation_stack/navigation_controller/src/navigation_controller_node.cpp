@@ -1,4 +1,5 @@
 #include "navigation_controller_node.h"
+#include <cmath>
 
 NavigationController::NavigationController(ros::NodeHandle& nh_) : nh(nh_), v_d(0.0), w_d(0.0), 
 navigationFsm(navigation::states::idle), tfBuffer(), tfListener(tfBuffer) {
@@ -208,6 +209,12 @@ void NavigationController::rvizGoalCallBack(const geometry_msgs::PoseStamped::Co
 
 void NavigationController::publishVel() {
 
+    // Só publica se houver movimento real (não zeros)
+    // Isto evita publicar constantemente quando está em idle
+    if (std::abs(v_d) < 1e-6 && std::abs(w_d) < 1e-6) {
+        return;  // Não publica zeros quando está parado
+    }
+
     geometry_msgs::Twist cmd;
     cmd.linear.x  = v_d;
     cmd.linear.y  = 0.0;
@@ -230,7 +237,15 @@ double NavigationController::normalizeAngle(double theta) {
 void NavigationController::hardStop() {
 
     w_d = v_d = 0.0;
-    publishVel();
+    // Força publicação de zeros para parar o robô imediatamente
+    geometry_msgs::Twist cmd;
+    cmd.linear.x  = 0.0;
+    cmd.linear.y  = 0.0;
+    cmd.linear.z  = 0.0;
+    cmd.angular.x = 0.0;
+    cmd.angular.y = 0.0;
+    cmd.angular.z = 0.0;
+    velPub.publish(cmd);
 
 }
 

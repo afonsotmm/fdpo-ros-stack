@@ -2,13 +2,11 @@
   <!-- Teleop RQT Robot Steering (Interface Gráfica) -->
   <!-- Controla o robô com sliders numa interface gráfica -->
   <!-- 
-    Nota: Este launch file abre o RQT com o plugin de steering.
-    Podes também abrir manualmente: rqt -> Plugins -> Robot Tools -> Robot Steering
+    NOTA: Este launch file executa o rqt_robot_steering via rosrun.
+    Alternativa: Abrir manualmente: rqt -> Plugins -> Robot Tools -> Robot Steering
   -->
   
-  <node pkg="rqt" type="rqt" name="rqt_robot_steering" args="--standalone rqt_robot_steering">
-    <remap from="/cmd_vel" to="/cmd_vel"/>
-  </node>
+  <node pkg="rqt_robot_steering" type="rqt_robot_steering" name="rqt_robot_steering" output="screen"/>
   
 </launch>
 
