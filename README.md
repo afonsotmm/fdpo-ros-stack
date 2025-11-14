@@ -62,6 +62,36 @@ rosparam set /pico_driver_node/debug_comm true
 rosparam set /pico_driver_node/debug_comm false
 ```
 
+#### Manual Control (Teleop)
+
+Control the robot manually using keyboard or a graphical interface:
+
+**Option 1: Keyboard Control (Terminal)**
+```bash
+# Instalar o pacote (se necessário)
+sudo apt install ros-noetic-teleop-twist-keyboard
+
+# Lançar o controlo por teclado
+roslaunch conf launch/hmi/teleop_keyboard.launch
+```
+
+**Comandos do teclado:**
+- `i`: avançar
+- `,`: recuar
+- `j`: rodar esquerda
+- `l`: rodar direita
+- `u`: avançar + rodar esquerda
+- `o`: avançar + rodar direita
+- `k`: parar
+- `q/z`: aumentar/diminuir velocidade linear
+- `w/x`: aumentar/diminuir velocidade angular
+
+**Option 2: Graphical Interface (RQT)**
+```bash
+# Lançar interface gráfica com sliders
+roslaunch conf launch/hmi/teleop_rqt_steering.launch
+```
+
 >  **Important:** run `source devel/setup.bash` in **every terminal** where you run ROS nodes.
 
 ---

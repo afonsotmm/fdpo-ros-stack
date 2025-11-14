@@ -13,9 +13,15 @@
   <!-- EKF Localizer -->
   <include if="$(arg use_ekf)" file="$(find conf)/launch/navigation/localizer/ekf_localizer/run_ekf_localizer.launch"/>
 
-  <!-- without EKF-->
+  <!-- without EKF: transformações estáticas para teste com rosbag -->
   <node unless="$(arg use_ekf)" pkg="tf" type="static_transform_publisher" name="map_to_odom_publisher"
         args="0 0 0 0 0 0 map odom 100"/>
+  <!-- odom->base_link: na origem quando não há hardware -->
+  <node unless="$(arg use_ekf)" pkg="tf" type="static_transform_publisher" name="odom_to_base_link_publisher"
+        args="0 0 0 0 0 0 odom base_link 100"/>
+  <!-- base_link->laser: z=0.15, yaw=180° (mesma configuração do driver) -->
+  <node unless="$(arg use_ekf)" pkg="tf" type="static_transform_publisher" name="base_link_to_laser_publisher"
+        args="0 0 0.15 0 0 3.14159 base_link laser 100"/>
 
 
 

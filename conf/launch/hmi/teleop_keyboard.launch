@@ -1,0 +1,24 @@
+<launch>
+  <!-- Teleop Keyboard Control -->
+  <!-- Controla o robô com o teclado -->
+  <!-- 
+    Comandos:
+    - i: avançar
+    - ,: recuar
+    - j: rodar esquerda
+    - l: rodar direita
+    - u: avançar + rodar esquerda
+    - o: avançar + rodar direita
+    - k: parar
+    - q/z: aumentar/diminuir velocidade linear
+    - w/x: aumentar/diminuir velocidade angular
+  -->
+  
+  <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_keyboard" output="screen">
+    <remap from="cmd_vel" to="/cmd_vel"/>
+    <param name="speed" value="0.5"/>
+    <param name="turn" value="1.0"/>
+  </node>
+  
+</launch>
+
